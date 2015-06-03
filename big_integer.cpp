@@ -104,8 +104,8 @@ big_integer& big_integer::operator*= (big_integer const &num) {
         bool stop = false;
         for (size_t j = num.data.size(); j > 0 || carry > 0; --j) {
             if (j == 0) {stop = true;}
-            __int128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j] : 0) + carry;
-            this->data[i + j] = static_cast<uint64_t>(curr % base);
+            __int128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j - 1] : 0) + carry;
+            this->data[i + j - 2] = static_cast<uint64_t>(curr % base);
             carry = static_cast<__uint128_t>(curr / base);
         }
     }
