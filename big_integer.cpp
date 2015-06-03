@@ -30,12 +30,10 @@ big_integer::big_integer(big_integer const &num) {
 
 big_integer& big_integer::operator+=(big_integer const &num) {
     if (this->sign && !num.sign) {
-        this->sign = false;
-        return num.sub(*this);
+        return num -= (-(*this));
     }
     if (!this->sign && num.sign) {
-        num.sign = false;
-        return (*this).sub(num);
+        return (*this) -= (-num);
     }
 
     size_t carry = 0;
@@ -63,29 +61,24 @@ big_integer& big_integer::operator+=(big_integer const &num) {
 
 big_integer& big_integer::operator-= (big_integer const &num) {
     if (this->sign && !num.sign) {
-        num.sign = true;
-        return (*this).add(num);
+        return (*this) += (-num);
     }
     if (!this->sign && num.sign) {
-        num.sign = false;
-        return (*this).add(num);
+        return (*this) += (-num);
     }
 
     if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
-        void* ptr = &num;
-        num = *this;
-        this = static_cast<big_integer *>(ptr);
-        this->sign = !this->sign;
+        return num -= (*this);
     }
 
     __int128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
         carry = this->data[i] - carry - num.data[i];
         if (carry < 0) {
-            this->data[i] = base + carry;
+            this->data[i] = static_cast<size_t>(base + carry);
             carry = 1;
         } else {
-            this->data[i] = carry;
+            this->data[i] = static_cast<size_t>(carry);
             carry = 0;
         }
     }
@@ -102,12 +95,7 @@ big_integer& big_integer::operator-= (big_integer const &num) {
 }
 
 big_integer& big_integer::operator*= (big_integer const &num) {
-    bool signum;
-    if (this->sign != num.sign) {
-        signum = true;
-    } else {
-        signum = false;
-    }
+    this->sign = this->sign ^ num.sign;
 
     std::vector<size_t> val(this->data.size() + num.data.size(), 0);
     __int128_t carry = 0;
