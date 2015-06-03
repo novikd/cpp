@@ -97,7 +97,6 @@ big_integer& big_integer::operator-= (big_integer const &num) {
 big_integer& big_integer::operator*= (big_integer const &num) {
     this->sign = this->sign ^ num.sign;
 
-    std::vector<size_t> val(this->data.size() + num.data.size(), 0);
     __int128_t carry = 0;
     for (size_t i = 0; i < num.data.size(); i++) {
         for (size_t j = 0; j < this->data.size() || carry > 0; j++) {
@@ -201,4 +200,3 @@ big_integer& big_integer::operator^= (big_integer const &num) {
 
     return big_integer(this->sign ^ num.sign, val);
 }
-
