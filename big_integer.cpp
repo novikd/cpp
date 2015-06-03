@@ -97,15 +97,19 @@ big_integer& big_integer::operator-= (big_integer const &num) {
 big_integer& big_integer::operator*= (big_integer const &num) {
     this->sign = this->sign ^ num.sign;
 
-    __int128_t carry = 0;
-    for (size_t i = 0; i < num.data.size(); i++) {
-        for (size_t j = 0; j < this->data.size() || carry > 0; j++) {
-            __int128_t curr = val [i + j] + num.data[i] * (j < this->data.size() ? this->data[j] : 0) + carry;
-            val[i + j] = static_cast<uint64_t>(curr % base);
-            carry = curr / base;
+    __uint128_t carry = 0;
+    size_t len = this->data.size();
+    this->data.resize(len + num.data.size());
+    for (size_t i = len; i > 0; --i) {
+        bool stop = false;
+        for (size_t j = num.data.size(); j > 0 || carry > 0; --j) {
+            if (j == 0) {stop = true;}
+            __int128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j] : 0) + carry;
+            this->data[i + j] = static_cast<uint64_t>(curr % base);
+            carry = static_cast<__uint128_t>(curr / base);
         }
     }
-    return big_integer(signum, val);
+    return (*this);
 }
 
 big_integer& big_integer::operator/= (big_integer const &num) {
