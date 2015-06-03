@@ -7,9 +7,6 @@
 
 const __int128_t base = static_cast<__int128_t>(1 << 64);
 
-std::vector<size_t> data;
-bool sign;
-
 big_integer::big_integer(int num) {
     if (num >= 0) {
         this->sign = false;
@@ -29,6 +26,12 @@ big_integer::big_integer(big_integer const &num) {
 }
 
 big_integer::~big_integer() { }
+
+big_integer& big_integer::operator= (big_integer const &num) {
+    this->data = num.data;
+    this->sign = num.sign;
+    return *this;
+}
 
 big_integer& big_integer::operator+=(big_integer const &num) {
     if (this->sign && !num.sign) {
