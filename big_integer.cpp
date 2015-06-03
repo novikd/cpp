@@ -28,6 +28,8 @@ big_integer::big_integer(big_integer const &num) {
     this->data = num.data;
 }
 
+big_integer::~big_integer() { }
+
 big_integer& big_integer::operator+=(big_integer const &num) {
     if (this->sign && !num.sign) {
         return num -= (-(*this));
@@ -61,14 +63,14 @@ big_integer& big_integer::operator+=(big_integer const &num) {
 
 big_integer& big_integer::operator-= (big_integer const &num) {
     if (this->sign && !num.sign) {
-        return (*this) += (-num);
+        return (*this) += -(num);
     }
     if (!this->sign && num.sign) {
-        return (*this) += (-num);
+        return (*this) += -(num);
     }
 
     if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
-        return num -= (*this);
+        return -(num -= (*this));
     }
 
     __int128_t carry = 0;
@@ -113,11 +115,7 @@ big_integer& big_integer::operator*= (big_integer const &num) {
 }
 
 big_integer& big_integer::operator/= (big_integer const &num) {
-    if (this->sign != num.sign) {
-        this->sign = true;
-    } else {
-        this->sign = false;
-    }
+    this->sign = this->sign ^ num.sign;
 
 }
 
@@ -203,4 +201,14 @@ big_integer& big_integer::operator^= (big_integer const &num) {
     }
 
     return big_integer(this->sign ^ num.sign, val);
+}
+
+big_integer big_integer::operator+() const {
+    return *this;
+}
+
+big_integer big_integer::operator-() const {
+    big_integer tmp = *this;
+    tmp.sign = !tmp.sign;
+    return tmp;
 }
