@@ -279,6 +279,15 @@ big_integer big_integer::operator-() const {
     return tmp;
 }
 
+big_integer big_integer::operator~() const {
+    big_integer tmp = code(*this);
+    tmp.sign = !tmp.sign;
+    for (size_t i = 0; i < tmp.data.size(); ++i) {
+        tmp.data[i] = ~tmp.data[i];
+    }
+    return decode(tmp);
+}
+
 big_integer& big_integer::operator++() {
     *this += big_integer(1);
     return *this;
