@@ -311,6 +311,20 @@ big_integer big_integer::operator--(int) {
 }
 
 friend bool operator== (big_integer const &frs, big_integer const &snd) {
+    for (size_t i = frs.data.size(); i > 1; --i) {
+        if (frs.data[i - 1] == 0) {
+            frs.data.pop_back();
+        } else {
+            break;
+        }
+    }
+    for (size_t i = snd.data.size(); i > 1; --i) {
+        if (snd.data[i - 1] == 0) {
+            snd.data.pop_back();
+        } else {
+            break;
+        }
+    }
     if (frs.sign != snd.sign || frs.data.size() != snd.data.size()) {
         return false;
     }
@@ -323,6 +337,20 @@ friend bool operator== (big_integer const &frs, big_integer const &snd) {
 }
 
 friend bool operator!= (big_integer const &frs, big_integer const &snd) {
+    for (size_t i = frs.data.size(); i > 1; --i) {
+        if (frs.data[i - 1] == 0) {
+            frs.data.pop_back();
+        } else {
+            break;
+        }
+    }
+    for (size_t i = snd.data.size(); i > 1; --i) {
+        if (snd.data[i - 1] == 0) {
+            snd.data.pop_back();
+        } else {
+            break;
+        }
+    }
     if (frs.sign != snd.sign || frs.data.size() != snd.data.size()) {
         return true;
     }
