@@ -25,6 +25,19 @@ big_integer::big_integer(big_integer const &num) {
     this->data = num.data;
 }
 
+explicit big_integer::big_integer(std::string const& str)
+    :big_integer(0)
+{
+    big_integer TEN = big_integer(10);
+    for (size_t i = str.length(); i > 1; --i) {
+        if (i == 1 && str[i - 1] == '-') {
+            this->sign = true;
+        }
+        *this *= TEN;
+        *this += big_integer(static_cast<int>(str[i - 1] - '0'));
+    }
+}
+
 big_integer::~big_integer() { }
 
 big_integer& big_integer::operator= (big_integer const &num) {
