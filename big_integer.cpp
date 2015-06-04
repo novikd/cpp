@@ -361,3 +361,51 @@ friend bool operator!= (big_integer const &frs, big_integer const &snd) {
     }
     return false;
 }
+
+friend bool big_integer::operator< (big_integer const &frs, big_integer const &snd) {
+    for (size_t i = frs.data.size(); i > 1; --i) {
+        if (frs.data[i - 1] == 0) {
+            frs.data.pop_back();
+        } else {
+            break;
+        }
+    }
+    for (size_t i = snd.data.size(); i > 1; --i) {
+        if (snd.data[i - 1] == 0) {
+            snd.data.pop_back();
+        } else {
+            break;
+        }
+    }
+    if (frs.sign && !snd.sign) {
+        return true;
+    }
+    if (!frs.sign && snd.sign) {
+        return false;
+    }
+
+    bool small = true;
+    if (frs.data.size() >= snd.data.size()) {small = false;}
+    for (size_t i = frs.data.size(); i > 1 && small; --i) {
+        if (frs.data[i - 1] >= snd.data[i - 1]) {
+            small = false;
+        }
+    }
+
+    if ((!frs.sign && !small) || (frs.sign && small)) {
+        return false;
+    }
+    return true;
+}
+
+friend bool big_integer::operator>(big_integer const &a, big_integer const &b) {
+    return b < a;
+}
+
+friend bool big_integer::operator<=(big_integer const &a, big_integer const &b) {
+    return (a < b) || (a == b);
+}
+
+friend bool big_integer::operator>=(big_integer const &a, big_integer const &b) {
+    return (a > b) || (a == b);
+}
