@@ -73,7 +73,8 @@ big_integer& big_integer::operator-= (big_integer const &num) {
     }
 
     if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
-        return -(num -= (*this));
+        big_integer tmp = -(num -= (*this));
+        return tmp;
     }
 
     __int128_t carry = 0;
