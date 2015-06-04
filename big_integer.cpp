@@ -130,9 +130,9 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     std::vector<size_t> val(dif);
 }
 
-const big_integer& code(big_integer const &num) {
+big_integer& code(big_integer const &num) {
     if (!num.sign) {
-        return num;
+        return static_cast<big_integer&>(num);
     }
     std::vector<size_t> val;
     for (size_t i = 0; i < num.data.size(); ++i) {
@@ -151,9 +151,9 @@ const big_integer& code(big_integer const &num) {
     return tmp;
 }
 
-const big_integer& decode(big_integer const &num) {
+big_integer& decode(big_integer const &num) {
     if (!num.sign) {
-        return num;
+        return static_cast<big_integer&>(num);
     }
     std::vector<size_t> val(num.data.size());
     __int128_t carry = 1;
@@ -308,4 +308,16 @@ big_integer big_integer::operator--(int) {
     big_integer tmp = *this;
     *this -= big_integer(1);
     return tmp;
+}
+
+friend bool operator== (big_integer const &frs, big_integer const &snd) {
+    if (frs.sign != snd.sign || frs.data.size() != snd.data.size()) {
+        return false;
+    }
+    for (size_t i = 0; i < frs.data.size(); ++i) {
+        if (frs.data[i] != snd.data[i]) {
+            return false;
+        }
+    }
+    return true;
 }
