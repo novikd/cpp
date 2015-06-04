@@ -282,9 +282,7 @@ big_integer& big_integer::operator>>=(int len) {
     return *this;
 }
 
-big_integer big_integer::operator+() const {
-    return *this;
-}
+big_integer big_integer::operator+() const { return *this; }
 
 big_integer big_integer::operator-() const {
     big_integer tmp = *this;
@@ -349,9 +347,7 @@ friend bool operator== (big_integer const &frs, big_integer const &snd) {
     return true;
 }
 
-friend bool operator!= (big_integer const &frs, big_integer const &snd) {
-    return !(frs == snd);
-}
+friend bool operator!= (big_integer const &frs, big_integer const &snd) { return !(frs == snd); }
 
 friend bool big_integer::operator< (big_integer const &frs, big_integer const &snd) {
     for (size_t i = frs.data.size(); i > 1; --i) {
@@ -389,9 +385,7 @@ friend bool big_integer::operator< (big_integer const &frs, big_integer const &s
     return true;
 }
 
-friend bool big_integer::operator>(big_integer const &a, big_integer const &b) {
-    return b < a;
-}
+friend bool big_integer::operator>(big_integer const &a, big_integer const &b) { return b < a; }
 
 friend bool big_integer::operator<=(big_integer const &a, big_integer const &b) {
     return (a < b) || (a == b);
@@ -401,34 +395,18 @@ friend bool big_integer::operator>=(big_integer const &a, big_integer const &b) 
     return (a > b) || (a == b);
 }
 
-big_integer operator+ (big_integer &a, big_integer const &b) {
-    return a += b;
-}
+big_integer operator+ (big_integer &a, big_integer const &b) { return a += b; }
 
-big_integer operator- (big_integer &a, big_integer const &b) {
-    return a -= b;
-}
+big_integer operator- (big_integer &a, big_integer const &b) { return a -= b; }
 
-big_integer operator* (big_integer &a, big_integer const &b) {
-    return a *= b;
-}
+big_integer operator* (big_integer &a, big_integer const &b) { return a *= b;}
 
-big_integer operator& (big_integer &a, big_integer const &b) {
-    return a &= b;
-}
+big_integer operator& (big_integer &a, big_integer const &b) { return a &= b; }
 
-big_integer operator| (big_integer &a, big_integer const &b) {
-    return a |= b;
-}
+big_integer operator| (big_integer &a, big_integer const &b) { return a |= b; }
 
-big_integer operator^ (big_integer &a, big_integer const &b) {
-    return a ^= b;
-}
+big_integer operator^ (big_integer &a, big_integer const &b) { return a ^= b; }
 
-big_integer operator<< (big_integer &a, int b) {
-    return a <<= b;
-}
+big_integer operator<< (big_integer &a, int b) { return a <<= b; }
 
-big_integer operator>> (big_integer &a, int b) {
-    return a >>= b;
-}
+big_integer operator>> (big_integer &a, int b) { return a >>= b; }
