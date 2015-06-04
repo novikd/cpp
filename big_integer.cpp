@@ -121,6 +121,59 @@ big_integer& big_integer::operator*= (big_integer const &num) {
 big_integer& big_integer::operator/= (big_integer const &num) {
     this->sign = this->sign ^ num.sign;
 
+    if (this->data.size() < num.data.size()) {
+        big_integer tmp = big_integer(0);
+        return tmp;
+    }
+
+    size_t dif = this->data.size() - num.data.size();
+    std::vector<size_t> val(dif);
+}
+
+const big_integer& code(big_integer const &num) {
+    if (!num.sign) {
+        return num;
+    }
+    std::vector<size_t> val;
+    for (size_t i = 0; i < num.data.size(); ++i) {
+        val.push_back(~num.data[i]);
+    }
+    __uint128_t carry = 1;
+    for (size_t i = 0; i < val.size(); ++i) {
+        __uint128_t curr = num.data[i];
+        curr += carry;
+        val[i] = static_cast<size_t>(curr % base);
+        carry = curr / base;
+    }
+    big_integer tmp;
+    tmp.sign = carry != 0 ? !num.sign : num.sign;
+    tmp.data = val;
+    return tmp;
+}
+
+const big_integer& decode(big_integer const &num) {
+    if (!num.sign) {
+        return num;
+    }
+    std::vector<size_t> val(num.data.size());
+    __int128_t carry = 1;
+    for (size_t i = 0; i < val.size(); ++i) {
+        __int128_t curr = num.data[i];
+        curr -= carry;
+        if (curr >= 0) {
+            val[i] = static_cast<size_t>(curr);
+            carry = 0;
+        } else {
+            curr += base;
+            val[i] = static_cast<size_t>(curr);
+            carry = 1;
+        }
+        val[i] = ~val[i];
+    }
+    big_integer tmp;
+    tmp.sign = carry != 0 ? !num.sign : num.sign;
+    tmp.data = val;
+    return tmp;
 }
 
 big_integer& big_integer::operator&=(big_integer const &num) {
@@ -134,21 +187,13 @@ big_integer& big_integer::operator&=(big_integer const &num) {
             num.data.push_back(0);
         }
     }
-    big_integer tmp;
-    if (this->sign) {
-        tmp = (*this).code();
-    } else {
-        tmp = *this;
+    big_integer tmp1 = code(*this), tmp2 = code(num);
+    for (size_t i = 0; i < tmp1.data.size(); i++) {
+        tmp1.data[i] &= tmp2.data[i];
     }
-    if (num.sign) {
-        num = num.code();
-    }
-    std::vector<size_t> val;
-    for (size_t i = 0; i < num.data.size(); i++) {
-        val.push_back(num.data[i] & tmp.data[i]);
-    }
-
-    return big_integer(this->sign && num.sign, val);
+    tmp1.sign = tmp1.sign && tmp2.sign;
+    *this = decode(tmp1);
+    return *this;
 }
 
 big_integer& big_integer::operator|=(big_integer const &num) {
@@ -162,24 +207,16 @@ big_integer& big_integer::operator|=(big_integer const &num) {
             num.data.push_back(0);
         }
     }
-    big_integer tmp;
-    if (this->sign) {
-        tmp = (*this).code();
-    } else {
-        tmp = *this;
+    big_integer tmp1 = code(*this), tmp2 = code(num);
+    for (size_t i = 0; i < tmp1.data.size(); i++) {
+        tmp1.data[i] |= tmp2.data[i];
     }
-    if (num.sign) {
-        num = num.code();
-    }
-    std::vector<size_t> val;
-    for (size_t i = 0; i < num.data.size(); i++) {
-        val.push_back(num.data[i] | tmp.data[i]);
-    }
-
-    return big_integer(this->sign || num.sign, val);
+    tmp1.sign = tmp1.sign || tmp2.sign;
+    *this = decode(tmp1);
+    return *this;
 }
 
-big_integer& big_integer::operator^= (big_integer const &num) {
+big_integer& big_integer::operator^=(big_integer const &num) {
     if (this->data.size() < num.data.size()) {
         while (this->data.size() < num.data.size()) {
             this->data.push_back(0);
@@ -190,21 +227,13 @@ big_integer& big_integer::operator^= (big_integer const &num) {
             num.data.push_back(0);
         }
     }
-    big_integer tmp;
-    if (this->sign) {
-        tmp = (*this).code();
-    } else {
-        tmp = *this;
+    big_integer tmp1 = code(*this), tmp2 = code(num);
+    for (size_t i = 0; i < tmp1.data.size(); i++) {
+        tmp1.data[i] ^= tmp2.data[i];
     }
-    if (num.sign) {
-        num = num.code();
-    }
-    std::vector<size_t> val;
-    for (size_t i = 0; i < num.data.size(); i++) {
-        val.push_back(num.data[i] ^ tmp.data[i]);
-    }
-
-    return big_integer(this->sign ^ num.sign, val);
+    tmp1.sign = tmp1.sign ^ tmp2.sign;
+    *this = decode(tmp1);
+    return *this;
 }
 
 big_integer& big_integer::operator<<=(int len) {
