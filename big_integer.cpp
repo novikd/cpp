@@ -209,15 +209,30 @@ big_integer& big_integer::operator^= (big_integer const &num) {
 big_integer& big_integer::operator<<=(int len) {
     size_t amount = static_cast<size_t>(len / 64);
     len %= 64;
-    std::vector<size_t> val;
-    for (size_t i = amount; i < this->data.size(); ++i) {
-        val.push_back(this->data[i]);
-    }
+    std::vector<size_t> val(amount, 0);
     __uint128_t carry = 0;
-    for (size_t i = val.size(); i > 0; --i) {
-        __uint128_t curr = val[i - 1];
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        __uint128_t curr = this->data[i];
         curr <<= len;
-        val[i - 1] = static_cast<size_t>((curr +carry) % base);
+        val.push_back(static_cast<size_t>((curr +carry) % base));
+        carry = curr / base;
+    }
+    if (carry != 0) {
+        val.push_back(static_cast<size_t>(carry));
+    }
+    this->data = val;
+    return *this;
+}
+
+big_integer& big_integer::operator>>=(int len) {
+    size_t amount = static_cast<size_t>(len / 64);
+    len %= 64;
+    std::vector<size_t> val(this->data.size() - amount);
+    __uint128_t carry = 0;
+    for (size_t i = this->data.size(); i > amount; --i) {
+        __uint128_t curr = this->data[i - 1];
+        curr >>= len;
+        val[i - amount - 1] = static_cast<size_t>((curr +carry) % base);
         carry = curr / base;
     }
     this->data = val;
