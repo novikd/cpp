@@ -321,3 +321,15 @@ friend bool operator== (big_integer const &frs, big_integer const &snd) {
     }
     return true;
 }
+
+friend bool operator!= (big_integer const &frs, big_integer const &snd) {
+    if (frs.sign != snd.sign || frs.data.size() != snd.data.size()) {
+        return true;
+    }
+    for (size_t i = 0; i < frs.data.size(); ++i) {
+        if (frs.data[i] != snd.data[i]) {
+            return true;
+        }
+    }
+    return false;
+}
