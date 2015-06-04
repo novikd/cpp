@@ -206,6 +206,24 @@ big_integer& big_integer::operator^= (big_integer const &num) {
     return big_integer(this->sign ^ num.sign, val);
 }
 
+big_integer& big_integer::operator<<=(int len) {
+    size_t amount = static_cast<size_t>(len / 64);
+    len %= 64;
+    std::vector<size_t> val;
+    for (size_t i = amount; i < this->data.size(); ++i) {
+        val.push_back(this->data[i]);
+    }
+    __uint128_t carry = 0;
+    for (size_t i = val.size(); i > 0; --i) {
+        __uint128_t curr = val[i - 1];
+        curr <<= len;
+        val[i - 1] = static_cast<size_t>((curr +carry) % base);
+        carry = curr / base;
+    }
+    this->data = val;
+    return *this;
+}
+
 big_integer big_integer::operator+() const {
     return *this;
 }
