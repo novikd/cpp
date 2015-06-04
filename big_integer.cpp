@@ -248,3 +248,25 @@ big_integer big_integer::operator-() const {
     tmp.sign = !tmp.sign;
     return tmp;
 }
+
+big_integer& big_integer::operator++() {
+    *this += big_integer(1);
+    return *this;
+}
+
+big_integer big_integer::operator++(int) {
+    big_integer tmp = *this;
+    *this += big_integer(1);
+    return tmp;
+}
+
+big_integer& big_integer::operator--() {
+    *this -= big_integer(1);
+    return *this;
+}
+
+big_integer big_integer::operator--(int) {
+    big_integer tmp = *this;
+    *this -= big_integer(1);
+    return tmp;
+}
