@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <algorithm>
 
-const __int128_t base = static_cast<__int128_t>(1 << 64);
+__uint128_t base = static_cast<__uint128_t>(1 << 64);
 
 big_integer::big_integer(int num) {
     if (num >= 0) {
@@ -26,7 +26,7 @@ big_integer::big_integer(big_integer const &num) {
     this->data = num.data;
 }
 
-explicit big_integer::big_integer(std::string const& str)
+big_integer::big_integer(std::string const& str)
     :big_integer(0)
 {
     big_integer TEN = big_integer(10);
@@ -49,7 +49,8 @@ big_integer& big_integer::operator= (big_integer const &num) {
 
 big_integer& big_integer::operator+=(big_integer const &num) {
     if (this->sign && !num.sign) {
-        return num -= (-(*this));
+        *this = num - (-(*this));
+        return *this;
     }
     if (!this->sign && num.sign) {
         return (*this) -= (-num);
@@ -79,16 +80,13 @@ big_integer& big_integer::operator+=(big_integer const &num) {
 }
 
 big_integer& big_integer::operator-= (big_integer const &num) {
-    if (this->sign && !num.sign) {
-        return (*this) += -(num);
-    }
-    if (!this->sign && num.sign) {
+    if (this->sign ^ !num.sign) {
         return (*this) += -(num);
     }
 
     if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
-        big_integer tmp = -(num -= (*this));
-        return tmp;
+        *this = -(num - (*this));
+        return *this;
     }
 
     __int128_t carry = 0;
@@ -134,38 +132,37 @@ big_integer& big_integer::operator*= (big_integer const &num) {
 
 big_integer& big_integer::operator/= (big_integer const &num) {
     if (this->data.size() < num.data.size()) {
-        big_integer tmp = big_integer(0);
-        return tmp;
+        *this = big_integer(0);
+        return *this;
     }
-
-    while (num.data.back() < (base >> 1)) {
-        num <<= 1;
+    big_integer tmp = num;
+    while (tmp.data.back() < (base >> 1)) {
+        tmp <<= 1;
         *this <<= 1;
     }
     big_integer quotient;
-    size_t dif = this->data.size() - num.data.size();
-    size_t n = num.data.size();
+    size_t dif = this->data.size() - tmp.data.size();
+    size_t n = tmp.data.size();
     quotient.data.resize(dif + 1);
 
-    if (*this >= (num << dif)) {
+    if (*this >= (tmp << dif)) {
         quotient.data[dif] = 1;
-        *this -= (num << dif);
+        *this -= (tmp << dif);
     } else {
         quotient.data[dif] = 0;
     }
 
     for (size_t i = dif; dif > 0; ++dif) {
         __uint128_t curr = this->data[n + i - 1];
-        curr *= base;
         curr += this->data[n + i - 2];
-        curr /= num.data[n - 1];
+        curr /= tmp.data[n - 1];
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        *this -= (big_integer(curr) << i) * num;
+        *this -= (big_integer(curr) << i) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
-            *this += (num << i);
+            *this += (tmp << i);
         }
         quotient.data[i] = static_cast<size_t>(curr);
     }
@@ -176,65 +173,62 @@ big_integer& big_integer::operator/= (big_integer const &num) {
 
 big_integer& big_integer::operator%= (big_integer const &num) {
     if (this->data.size() < num.data.size()) {
-        big_integer tmp = big_integer(0);
-        return tmp;
+        *this = big_integer(0);
+        return *this;
     }
-
-    while (num.data.back() < (base >> 1)) {
-        num <<= 1;
+    big_integer tmp = num;
+    while (tmp.data.back() < (base >> 1)) {
+        tmp <<= 1;
         *this <<= 1;
     }
-    size_t dif = this->data.size() - num.data.size();
-    size_t n = num.data.size();
+    size_t dif = this->data.size() - tmp.data.size();
+    size_t n = tmp.data.size();
 
     for (size_t i = dif; dif > 0; ++dif) {
         __uint128_t curr = this->data[n + i - 1];
-        curr *= base;
         curr += this->data[n + i - 2];
-        curr /= num.data[n - 1];
+        curr /= tmp.data[n - 1];
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        *this -= (big_integer(curr) << i) * num;
+        *this -= (big_integer(curr) << i) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
-            *this += (num << i);
+            *this += (tmp << i);
         }
     }
     return *this;
 }
 
 big_integer& code(big_integer const &num) {
-    if (num >= big_integer(0)) {
-        return static_cast<big_integer&>(num);
+    big_integer tmp = num;
+    if (tmp >= big_integer(0)) {
+        return tmp;
     }
-    big_integer tmp = ~num;
+    tmp = ~tmp;
     tmp += big_integer(1);
     return tmp;
 }
 
 big_integer& decode(big_integer const &num) {
-    if (num >= big_integer(0)) {
-        return static_cast<big_integer&>(num);
-    }
     big_integer tmp = num;
+    if (tmp >= big_integer(0)) {
+        return tmp;
+    }
     tmp -= big_integer(1);
     tmp = ~tmp;
     return tmp;
 }
 
 big_integer& big_integer::operator&=(big_integer const &num) {
-    if (this->data.size() < num.data.size()) {
-        while (this->data.size() < num.data.size()) {
-            this->data.push_back(0);
-        }
+    while (this->data.size() < num.data.size()) {
+        this->data.push_back(0);
     }
-    if (this->data.size() > num.data.size()) {
-        while (this->data.size() > num.data.size()) {
-            num.data.push_back(0);
-        }
+    big_integer tmp = num;
+    while (this->data.size() > tmp.data.size()) {
+        tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(num);
+    big_integer tmp1 = code(*this), tmp2 = code(tmp);
     for (size_t i = 0; i < tmp1.data.size(); i++) {
         tmp1.data[i] &= tmp2.data[i];
     }
@@ -244,17 +238,14 @@ big_integer& big_integer::operator&=(big_integer const &num) {
 }
 
 big_integer& big_integer::operator|=(big_integer const &num) {
-    if (this->data.size() < num.data.size()) {
-        while (this->data.size() < num.data.size()) {
-            this->data.push_back(0);
-        }
+    while (this->data.size() < num.data.size()) {
+        this->data.push_back(0);
     }
-    if (this->data.size() > num.data.size()) {
-        while (this->data.size() > num.data.size()) {
-            num.data.push_back(0);
-        }
+    big_integer tmp = num;
+    while (this->data.size() > tmp.data.size()) {
+        tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(num);
+    big_integer tmp1 = code(*this), tmp2 = code(tmp);
     for (size_t i = 0; i < tmp1.data.size(); i++) {
         tmp1.data[i] |= tmp2.data[i];
     }
@@ -264,17 +255,14 @@ big_integer& big_integer::operator|=(big_integer const &num) {
 }
 
 big_integer& big_integer::operator^=(big_integer const &num) {
-    if (this->data.size() < num.data.size()) {
-        while (this->data.size() < num.data.size()) {
-            this->data.push_back(0);
-        }
+    while (this->data.size() < num.data.size()) {
+        this->data.push_back(0);
     }
-    if (this->data.size() > num.data.size()) {
-        while (this->data.size() > num.data.size()) {
-            num.data.push_back(0);
-        }
+    big_integer tmp = num;
+    while (this->data.size() > tmp.data.size()) {
+        tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(num);
+    big_integer tmp1 = code(*this), tmp2 = code(tmp);
     for (size_t i = 0; i < tmp1.data.size(); i++) {
         tmp1.data[i] ^= tmp2.data[i];
     }
@@ -355,77 +343,79 @@ big_integer big_integer::operator--(int) {
     return tmp;
 }
 
-friend bool operator== (big_integer const &frs, big_integer const &snd) {
-    for (size_t i = frs.data.size(); i > 1; --i) {
-        if (frs.data[i - 1] == 0) {
-            frs.data.pop_back();
+bool operator== (big_integer const &frs, big_integer const &snd) {
+    big_integer tmp1 = frs, tmp2 = snd;
+    for (size_t i = tmp1.data.size(); i > 1; --i) {
+        if (tmp1.data[i - 1] == 0) {
+            tmp1.data.pop_back();
         } else {
             break;
         }
     }
-    for (size_t i = snd.data.size(); i > 1; --i) {
-        if (snd.data[i - 1] == 0) {
-            snd.data.pop_back();
+    for (size_t i = tmp2.data.size(); i > 1; --i) {
+        if (tmp2.data[i - 1] == 0) {
+            tmp2.data.pop_back();
         } else {
             break;
         }
     }
-    if (frs.sign != snd.sign || frs.data.size() != snd.data.size()) {
+    if (tmp1.sign != tmp2.sign || tmp1.data.size() != tmp2.data.size()) {
         return false;
     }
-    for (size_t i = 0; i < frs.data.size(); ++i) {
-        if (frs.data[i] != snd.data[i]) {
+    for (size_t i = 0; i < tmp1.data.size(); ++i) {
+        if (tmp1.data[i] != tmp2.data[i]) {
             return false;
         }
     }
     return true;
 }
 
-friend bool operator!= (big_integer const &frs, big_integer const &snd) { return !(frs == snd); }
+bool operator!= (big_integer const &frs, big_integer const &snd) { return !(frs == snd); }
 
-friend bool big_integer::operator< (big_integer const &frs, big_integer const &snd) {
-    for (size_t i = frs.data.size(); i > 1; --i) {
-        if (frs.data[i - 1] == 0) {
-            frs.data.pop_back();
+bool operator< (big_integer const &frs, big_integer const &snd) {
+    big_integer tmp1 = frs, tmp2 = snd;
+    for (size_t i = tmp1.data.size(); i > 1; --i) {
+        if (tmp1.data[i - 1] == 0) {
+            tmp1.data.pop_back();
         } else {
             break;
         }
     }
-    for (size_t i = snd.data.size(); i > 1; --i) {
-        if (snd.data[i - 1] == 0) {
-            snd.data.pop_back();
+    for (size_t i = tmp2.data.size(); i > 1; --i) {
+        if (tmp2.data[i - 1] == 0) {
+            tmp2.data.pop_back();
         } else {
             break;
         }
     }
-    if (frs.sign && !snd.sign) {
+    if (tmp1.sign && !tmp2.sign) {
         return true;
     }
-    if (!frs.sign && snd.sign) {
+    if (!tmp1.sign && tmp2.sign) {
         return false;
     }
 
     bool small = true;
-    if (frs.data.size() >= snd.data.size()) {small = false;}
-    for (size_t i = frs.data.size(); i > 1 && small; --i) {
-        if (frs.data[i - 1] >= snd.data[i - 1]) {
+    if (tmp1.data.size() >= tmp2.data.size()) {small = false;}
+    for (size_t i = tmp1.data.size(); i > 1 && small; --i) {
+        if (tmp1.data[i - 1] >= tmp2.data[i - 1]) {
             small = false;
         }
     }
 
-    if ((!frs.sign && !small) || (frs.sign && small)) {
+    if ((!tmp1.sign && !small) || (tmp1.sign && small)) {
         return false;
     }
     return true;
 }
 
-friend bool big_integer::operator>(big_integer const &a, big_integer const &b) { return b < a; }
+bool operator>(big_integer const &a, big_integer const &b) { return b < a; }
 
-friend bool big_integer::operator<=(big_integer const &a, big_integer const &b) {
+bool operator<=(big_integer const &a, big_integer const &b) {
     return (a < b) || (a == b);
 }
 
-friend bool big_integer::operator>=(big_integer const &a, big_integer const &b) {
+bool operator>=(big_integer const &a, big_integer const &b) {
     return (a > b) || (a == b);
 }
 
@@ -459,7 +449,7 @@ std::string to_string(big_integer const &a) {
     while (num > big_integer(0)) {
         big_integer curr = num % TEN;
         num /= TEN;
-        result += static_cast<char>('0' + num.data[0]);
+        result += static_cast<char>('0' + curr.data[0]);
     }
     if (num.sign) {
         result += '-';
