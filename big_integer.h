@@ -69,9 +69,9 @@ big_integer operator^(big_integer a, big_integer const& b);
 big_integer operator<<(big_integer a, int b);
 big_integer operator>>(big_integer a, int b);
 
-bool operator==(big_integer const&tmp1, big_integer const&tmp2);
+bool operator==(big_integer const& a, big_integer const& b);
 bool operator!=(big_integer const& a, big_integer const& b);
-bool operator<(big_integer const&tmp1, big_integer const&tmp2);
+bool operator<(big_integer const& a, big_integer const& b);
 bool operator>(big_integer const& a, big_integer const& b);
 bool operator<=(big_integer const& a, big_integer const& b);
 bool operator>=(big_integer const& a, big_integer const& b);
