@@ -10,8 +10,7 @@
 
 struct big_integer
 {
-    bool sign;
-    std::vector<size_t> data;
+
     big_integer();
     big_integer(big_integer const& other);
     big_integer(int a);
@@ -52,6 +51,9 @@ struct big_integer
 
     friend std::string to_string(big_integer const& a);
 
+private:
+    bool sign;
+    std::vector<size_t> data;
 };
 
 big_integer operator+(big_integer a, big_integer const& b);

@@ -4,6 +4,7 @@
 #include "big_integer.h"
 #include <vector>
 #include <stdint.h>
+#include <algorithm>
 
 const __int128_t base = static_cast<__int128_t>(1 << 64);
 
@@ -123,69 +124,102 @@ big_integer& big_integer::operator*= (big_integer const &num) {
         bool stop = false;
         for (size_t j = num.data.size(); j > 0 || carry > 0; --j) {
             if (j == 0) {stop = true;}
-            __int128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j - 1] : 0) + carry;
-            this->data[i + j - 2] = static_cast<uint64_t>(curr % base);
-            carry = static_cast<__uint128_t>(curr / base);
+            __uint128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j - 1] : 0) + carry;
+            this->data[i + j - 2] = static_cast<size_t>(curr % base);
+            carry = curr / base;
         }
     }
     return (*this);
 }
 
 big_integer& big_integer::operator/= (big_integer const &num) {
-    this->sign = this->sign ^ num.sign;
-
     if (this->data.size() < num.data.size()) {
         big_integer tmp = big_integer(0);
         return tmp;
     }
 
+    while (num.data.back() < (base >> 1)) {
+        num <<= 1;
+        *this <<= 1;
+    }
+    big_integer quotient;
     size_t dif = this->data.size() - num.data.size();
-    std::vector<size_t> val(dif);
+    size_t n = num.data.size();
+    quotient.data.resize(dif + 1);
+
+    if (*this >= (num << dif)) {
+        quotient.data[dif] = 1;
+        *this -= (num << dif);
+    } else {
+        quotient.data[dif] = 0;
+    }
+
+    for (size_t i = dif; dif > 0; ++dif) {
+        __uint128_t curr = this->data[n + i - 1];
+        curr *= base;
+        curr += this->data[n + i - 2];
+        curr /= num.data[n - 1];
+        if (base - 1 < curr) {
+            curr = base - 1;
+        }
+        *this -= (big_integer(curr) << i) * num;
+        while (*this < big_integer(0)) {
+            curr -= 1;
+            *this += (num << i);
+        }
+        quotient.data[i] = static_cast<size_t>(curr);
+    }
+    quotient.sign = this->sign ^ num.sign;
+    *this = quotient;
+    return *this;
+}
+
+big_integer& big_integer::operator%= (big_integer const &num) {
+    if (this->data.size() < num.data.size()) {
+        big_integer tmp = big_integer(0);
+        return tmp;
+    }
+
+    while (num.data.back() < (base >> 1)) {
+        num <<= 1;
+        *this <<= 1;
+    }
+    size_t dif = this->data.size() - num.data.size();
+    size_t n = num.data.size();
+
+    for (size_t i = dif; dif > 0; ++dif) {
+        __uint128_t curr = this->data[n + i - 1];
+        curr *= base;
+        curr += this->data[n + i - 2];
+        curr /= num.data[n - 1];
+        if (base - 1 < curr) {
+            curr = base - 1;
+        }
+        *this -= (big_integer(curr) << i) * num;
+        while (*this < big_integer(0)) {
+            curr -= 1;
+            *this += (num << i);
+        }
+    }
+    return *this;
 }
 
 big_integer& code(big_integer const &num) {
-    if (!num.sign) {
+    if (num >= big_integer(0)) {
         return static_cast<big_integer&>(num);
     }
-    std::vector<size_t> val;
-    for (size_t i = 0; i < num.data.size(); ++i) {
-        val.push_back(~num.data[i]);
-    }
-    __uint128_t carry = 1;
-    for (size_t i = 0; i < val.size(); ++i) {
-        __uint128_t curr = num.data[i];
-        curr += carry;
-        val[i] = static_cast<size_t>(curr % base);
-        carry = curr / base;
-    }
-    big_integer tmp;
-    tmp.sign = carry != 0 ? !num.sign : num.sign;
-    tmp.data = val;
+    big_integer tmp = ~num;
+    tmp += big_integer(1);
     return tmp;
 }
 
 big_integer& decode(big_integer const &num) {
-    if (!num.sign) {
+    if (num >= big_integer(0)) {
         return static_cast<big_integer&>(num);
     }
-    std::vector<size_t> val(num.data.size());
-    __int128_t carry = 1;
-    for (size_t i = 0; i < val.size(); ++i) {
-        __int128_t curr = num.data[i];
-        curr -= carry;
-        if (curr >= 0) {
-            val[i] = static_cast<size_t>(curr);
-            carry = 0;
-        } else {
-            curr += base;
-            val[i] = static_cast<size_t>(curr);
-            carry = 1;
-        }
-        val[i] = ~val[i];
-    }
-    big_integer tmp;
-    tmp.sign = carry != 0 ? !num.sign : num.sign;
-    tmp.data = val;
+    big_integer tmp = num;
+    tmp -= big_integer(1);
+    tmp = ~tmp;
     return tmp;
 }
 
@@ -401,6 +435,10 @@ big_integer operator- (big_integer &a, big_integer const &b) { return a -= b; }
 
 big_integer operator* (big_integer &a, big_integer const &b) { return a *= b;}
 
+big_integer operator/ (big_integer &a, big_integer const &b) { return a /= b;}
+
+big_integer operator% (big_integer &a, big_integer const &b) { return a %= b;}
+
 big_integer operator& (big_integer &a, big_integer const &b) { return a &= b; }
 
 big_integer operator| (big_integer &a, big_integer const &b) { return a |= b; }
@@ -410,3 +448,22 @@ big_integer operator^ (big_integer &a, big_integer const &b) { return a ^= b; }
 big_integer operator<< (big_integer &a, int b) { return a <<= b; }
 
 big_integer operator>> (big_integer &a, int b) { return a >>= b; }
+
+std::string to_string(big_integer const &a) {
+    std::string result = "";
+    if (a == big_integer(0)) {
+        return "0";
+    }
+    big_integer num = a;
+    big_integer TEN = big_integer(10);
+    while (num > big_integer(0)) {
+        big_integer curr = num % TEN;
+        num /= TEN;
+        result += static_cast<char>('0' + num.data[0]);
+    }
+    if (num.sign) {
+        result += '-';
+    }
+    std::reverse(result.begin(), result.end());
+    return result;
+}
