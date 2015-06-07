@@ -445,9 +445,10 @@ std::string to_string(big_integer const &a) {
         return "0";
     }
     big_integer num = a;
-    big_integer TEN = big_integer(10);
+    const big_integer TEN = big_integer(10);
     while (num > big_integer(0)) {
-        big_integer curr = num % TEN;
+        big_integer curr = num;
+        curr %= TEN;
         num /= TEN;
         result += static_cast<char>('0' + curr.data[0]);
     }
