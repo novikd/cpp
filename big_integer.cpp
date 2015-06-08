@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <algorithm>
 
-__uint128_t base = static_cast<__uint128_t>(1 << 64);
+__uint128_t base = static_cast<__uint128_t>(0x10000000000000000);
 
 big_integer::big_integer(int num) {
     if (num >= 0) {
@@ -53,7 +53,8 @@ big_integer& big_integer::operator+=(big_integer const &num) {
         return *this;
     }
     if (!this->sign && num.sign) {
-        return (*this) -= (-num);
+        *this -= (-num);
+        return *this;
     }
 
     size_t carry = 0;
@@ -66,11 +67,11 @@ big_integer& big_integer::operator+=(big_integer const &num) {
             curr += num.data[i];
         }
         if (i < this->data.size()) {
-            this->data[i] = static_cast<size_t>(curr % base);
+            this->data[i] = static_cast<size_t>(curr - ((curr >> 64) << 64));
         } else {
-            this->data.push_back(static_cast<size_t>(curr % base));
+            this->data.push_back(static_cast<size_t>(curr - ((curr >> 64) << 64)));
         }
-        carry = static_cast<size_t>(curr / base);
+        carry = static_cast<size_t>(curr >> 64);
     }
 
     if (carry != 0) {
@@ -81,7 +82,8 @@ big_integer& big_integer::operator+=(big_integer const &num) {
 
 big_integer& big_integer::operator-= (big_integer const &num) {
     if (this->sign ^ !num.sign) {
-        return (*this) += -(num);
+        *this += -num;
+        return *this;
     }
 
     if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
