@@ -419,25 +419,25 @@ bool operator>=(big_integer const &a, big_integer const &b) {
     return (a > b) || (a == b);
 }
 
-big_integer operator+ (big_integer &a, big_integer const &b) { return a += b; }
+big_integer operator+ (big_integer a, big_integer const &b) { return a += b; }
 
-big_integer operator- (big_integer &a, big_integer const &b) { return a -= b; }
+big_integer operator- (big_integer a, big_integer const &b) { return a -= b; }
 
-big_integer operator* (big_integer &a, big_integer const &b) { return a *= b;}
+big_integer operator* (big_integer a, big_integer const &b) { return a *= b;}
 
-big_integer operator/ (big_integer &a, big_integer const &b) { return a /= b;}
+big_integer operator/ (big_integer a, big_integer const &b) { return a /= b;}
 
-big_integer operator% (big_integer &a, big_integer const &b) { return a %= b;}
+big_integer operator% (big_integer a, big_integer const &b) { return a %= b;}
 
-big_integer operator& (big_integer &a, big_integer const &b) { return a &= b; }
+big_integer operator& (big_integer a, big_integer const &b) { return a &= b; }
 
-big_integer operator| (big_integer &a, big_integer const &b) { return a |= b; }
+big_integer operator| (big_integer a, big_integer const &b) { return a |= b; }
 
-big_integer operator^ (big_integer &a, big_integer const &b) { return a ^= b; }
+big_integer operator^ (big_integer a, big_integer const &b) { return a ^= b; }
 
-big_integer operator<< (big_integer &a, int b) { return a <<= b; }
+big_integer operator<< (big_integer a, int b) { return a <<= b; }
 
-big_integer operator>> (big_integer &a, int b) { return a >>= b; }
+big_integer operator>> (big_integer a, int b) { return a >>= b; }
 
 std::string to_string(big_integer const &a) {
     std::string result = "";
@@ -457,4 +457,8 @@ std::string to_string(big_integer const &a) {
     }
     std::reverse(result.begin(), result.end());
     return result;
+}
+
+std::ostream& operator<<(std::ostream& s, big_integer const& a) {
+    return s << to_string(a);
 }
