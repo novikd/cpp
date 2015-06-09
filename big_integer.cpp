@@ -53,7 +53,8 @@ big_integer& big_integer::operator+=(big_integer const &num) {
         return *this;
     }
     if (!this->sign && num.sign) {
-        *this -= (-num);
+        big_integer tmp = -num;
+        *this -= tmp;
         return *this;
     }
 
@@ -81,7 +82,7 @@ big_integer& big_integer::operator+=(big_integer const &num) {
 }
 
 big_integer& big_integer::operator-= (big_integer const &num) {
-    if (this->sign ^ !num.sign) {
+    if (this->sign ^ num.sign) {
         *this += -num;
         return *this;
     }
@@ -90,12 +91,13 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         *this = -(num - (*this));
         return *this;
     }
-
+    __int128_t bas = 1 << 63;
+    bas <<= 1;
     __int128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
         carry = this->data[i] - carry - num.data[i];
         if (carry < 0) {
-            this->data[i] = static_cast<size_t>(base + carry);
+            this->data[i] = static_cast<size_t>(bas + carry);
             carry = 1;
         } else {
             this->data[i] = static_cast<size_t>(carry);
@@ -125,8 +127,8 @@ big_integer& big_integer::operator*= (big_integer const &num) {
         for (size_t j = num.data.size(); j > 0 || carry > 0; --j) {
             if (j == 0) {stop = true;}
             __uint128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j - 1] : 0) + carry;
-            this->data[i + j - 2] = static_cast<size_t>(curr % base);
-            carry = curr / base;
+            this->data[i + j - 2] = static_cast<size_t>(curr - ((curr >> 64) << 64));
+            carry = curr >> 64;
         }
     }
     return (*this);
@@ -348,20 +350,20 @@ big_integer big_integer::operator--(int) {
 bool operator== (big_integer const &frs, big_integer const &snd) {
     big_integer tmp1 = frs, tmp2 = snd;
     for (size_t i = tmp1.data.size(); i > 1; --i) {
-        if (tmp1.data[i - 1] == 0) {
+        if (tmp1.data.back() == 0) {
             tmp1.data.pop_back();
         } else {
             break;
         }
     }
     for (size_t i = tmp2.data.size(); i > 1; --i) {
-        if (tmp2.data[i - 1] == 0) {
+        if (tmp2.data.back() == 0) {
             tmp2.data.pop_back();
         } else {
             break;
         }
     }
-    if (tmp1.sign != tmp2.sign || tmp1.data.size() != tmp2.data.size()) {
+    if ((tmp1.sign ^ tmp2.sign) || (tmp1.data.size() != tmp2.data.size())) {
         return false;
     }
     for (size_t i = 0; i < tmp1.data.size(); ++i) {
@@ -398,8 +400,8 @@ bool operator< (big_integer const &frs, big_integer const &snd) {
     }
 
     bool small = true;
-    if (tmp1.data.size() >= tmp2.data.size()) {small = false;}
-    for (size_t i = tmp1.data.size(); i > 1 && small; --i) {
+    if (tmp1.data.size() > tmp2.data.size()) {small = false;}
+    for (size_t i = tmp1.data.size(); i > 0 && small; --i) {
         if (tmp1.data[i - 1] >= tmp2.data[i - 1]) {
             small = false;
         }
