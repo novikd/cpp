@@ -146,7 +146,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         return *this;
     }
     big_integer tmp = num;
-    while (tmp.data.back() < (base >> 1)) {
+    while (tmp.data.back() < (1 << 63)) {
         tmp <<= 1;
         *this <<= 1;
     }
@@ -169,7 +169,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        *this -= (big_integer(curr) << i) * tmp;
+        *this -= (big_integer(static_cast<int>(curr)) << i) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
             *this += (tmp << i);
@@ -187,7 +187,7 @@ big_integer& big_integer::operator%= (big_integer const &num) {
         return *this;
     }
     big_integer tmp = num;
-    while (tmp.data.back() < (base >> 1)) {
+    while (tmp.data.back() < (1 << 63)) {
         tmp <<= 1;
         *this <<= 1;
     }
