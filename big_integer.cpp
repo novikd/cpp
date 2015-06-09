@@ -123,14 +123,20 @@ big_integer& big_integer::operator*= (big_integer const &num) {
     size_t len = this->data.size();
     this->data.resize(len + num.data.size());
     for (size_t i = len; i > 0; --i) {
-        bool stop = false;
-        for (size_t j = num.data.size(); j > 0 || carry > 0; --j) {
-            if (j == 0) {stop = true;}
-            __uint128_t curr = this->data[i + j - 2] + this->data[i - 1] * (!stop ? num.data[j - 1] : 0) + carry;
-            this->data[i + j - 2] = static_cast<size_t>(curr - ((curr >> 64) << 64));
-            carry = curr >> 64;
+        __uint128_t mul = this->data[i - 1];
+        this->data[i - 1] = 0;
+        for (size_t j = 0; j < num.data.size() || carry > 0; ++j) {
+            if (i + j - 1 < this->data.size()) {
+                __uint128_t curr = this->data[i + j - 1] + mul * (j < num.data.size() ? num.data[j] : 0) + carry;
+                this->data[i + j - 1] = static_cast<size_t>(curr - ((curr >> 64) << 64));
+                carry = curr >> 64;
+            } else {
+                this->data.push_back(static_cast<size_t>(carry));
+                carry = 0;
+            }
         }
     }
+
     return (*this);
 }
 
