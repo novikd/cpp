@@ -78,7 +78,7 @@ big_integer& big_integer::operator+=(big_integer const &num) {
     if (carry != 0) {
         this->data.push_back(carry);
     }
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator-= (big_integer const &num) {
@@ -103,15 +103,7 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         }
     }
 
-    for (size_t i = this->data.size(); i > 1; i--) {
-        if (this-data[i - 1] == 0) {
-            this->data.pop_back();
-        } else {
-            break;
-        }
-    }
-
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator*= (big_integer const &num) {
@@ -135,7 +127,7 @@ big_integer& big_integer::operator*= (big_integer const &num) {
         }
     }
 
-    return (*this);
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator/= (big_integer const &num) {
@@ -182,7 +174,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     }
     quotient.sign = res;
     *this = quotient;
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator%= (big_integer const &num) {
@@ -223,7 +215,7 @@ big_integer& big_integer::operator%= (big_integer const &num) {
         }
     }
     //this->sign = res;
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::correct() {
