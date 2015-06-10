@@ -160,7 +160,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         quotient.data[dif] = 0;
     }
 
-    for (size_t i = dif; dif > 0; ++dif) {
+    for (size_t i = dif; i > 0; --i) {
         __uint128_t curr = this->data[n + i - 1];
         curr += this->data[n + i - 2];
         curr /= tmp.data[n - 1];
@@ -192,7 +192,7 @@ big_integer& big_integer::operator%= (big_integer const &num) {
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
 
-    for (size_t i = dif; dif > 0; ++dif) {
+    for (size_t i = dif; i > 0; --i) {
         __uint128_t curr = this->data[n + i - 1];
         curr += this->data[n + i - 2];
         curr /= tmp.data[n - 1];
@@ -366,6 +366,9 @@ bool operator== (big_integer const &frs, big_integer const &snd) {
         } else {
             break;
         }
+    }
+    if (tmp1.data.size() == tmp2.data.size() && tmp1.data.size() == 1 && tmp1.data[0] == tmp2.data[0] && tmp1.data[0] == 0) {
+        return true;
     }
     if ((tmp1.sign ^ tmp2.sign) || (tmp1.data.size() != tmp2.data.size())) {
         return false;
