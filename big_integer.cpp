@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <algorithm>
 
-__uint128_t base = static_cast<__uint128_t>(0x10000000000000000);
+__uint128_t base = static_cast<__uint128_t>(1) << 64;
 
 big_integer::big_integer(int num) {
     if (num >= 0) {
@@ -91,13 +91,11 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         *this = -(num - (*this));
         return *this;
     }
-    __int128_t bas = 1 << 63;
-    bas <<= 1;
     __int128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
         carry = this->data[i] - carry - num.data[i];
         if (carry < 0) {
-            this->data[i] = static_cast<size_t>(bas + carry);
+            this->data[i] = static_cast<size_t>(base + carry);
             carry = 1;
         } else {
             this->data[i] = static_cast<size_t>(carry);
@@ -146,7 +144,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         return *this;
     }
     big_integer tmp = num;
-    while (tmp.data.back() < (1 << 63)) {
+    while (tmp.data.back() < base / 2) {
         tmp <<= 1;
         *this <<= 1;
     }
@@ -187,7 +185,7 @@ big_integer& big_integer::operator%= (big_integer const &num) {
         return *this;
     }
     big_integer tmp = num;
-    while (tmp.data.back() < (1 << 63)) {
+    while (tmp.data.back() < base / 2) {
         tmp <<= 1;
         *this <<= 1;
     }
@@ -210,7 +208,7 @@ big_integer& big_integer::operator%= (big_integer const &num) {
     return *this;
 }
 
-big_integer& code(big_integer const &num) {
+big_integer code(big_integer const &num) {
     big_integer tmp = num;
     if (tmp >= big_integer(0)) {
         return tmp;
@@ -220,7 +218,7 @@ big_integer& code(big_integer const &num) {
     return tmp;
 }
 
-big_integer& decode(big_integer const &num) {
+big_integer decode(big_integer const &num) {
     big_integer tmp = num;
     if (tmp >= big_integer(0)) {
         return tmp;
