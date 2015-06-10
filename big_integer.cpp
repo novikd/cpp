@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <algorithm>
 
-__uint128_t base = static_cast<__uint128_t>(1) << 64;
+const __uint128_t base = static_cast<__uint128_t>(1) << 64;
 
 big_integer::big_integer(int num) {
     if (num >= 0) {
@@ -143,7 +143,10 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         *this = big_integer(0);
         return *this;
     }
+    bool res = this->sign ^ num.sign;
+    this->sign = false;
     big_integer tmp = num;
+    tmp.sign = false;
     while (tmp.data.back() < base / 2) {
         tmp <<= 1;
         *this <<= 1;
@@ -152,29 +155,31 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
     quotient.data.resize(dif + 1);
-
-    if (*this >= (tmp << dif)) {
+    big_integer comp = big_integer(1);
+    if (*this >= (comp << (dif * 64))) {
         quotient.data[dif] = 1;
-        *this -= (tmp << dif);
+        *this -= (comp << (dif * 64));
     } else {
         quotient.data[dif] = 0;
     }
-
+    comp.data.resize(1);
     for (size_t i = dif; i > 0; --i) {
         __uint128_t curr = this->data[n + i - 1];
+        curr <<= 64;
         curr += this->data[n + i - 2];
         curr /= tmp.data[n - 1];
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        *this -= (big_integer(static_cast<int>(curr)) << i) * tmp;
+        comp.data[0] = static_cast<size_t>(curr);
+        *this -= (comp << (i - 1)) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
-            *this += (tmp << i);
+            *this += (tmp << (i - 1));
         }
-        quotient.data[i] = static_cast<size_t>(curr);
+        quotient.data[i - 1] = static_cast<size_t>(curr);
     }
-    quotient.sign = this->sign ^ num.sign;
+    quotient.sign = res;
     *this = quotient;
     return *this;
 }
