@@ -155,10 +155,11 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
     quotient.data.resize(dif + 1);
-    big_integer comp = big_integer(1);
-    if (*this >= (comp << (dif * 64))) {
+    big_integer comp = big_integer(1) << (dif * 64);
+    comp *= tmp;
+    if (*this >= comp) {
         quotient.data[dif] = 1;
-        *this -= (comp << (dif * 64));
+        *this -= comp;
     } else {
         quotient.data[dif] = 0;
     }
@@ -189,48 +190,96 @@ big_integer& big_integer::operator%= (big_integer const &num) {
         *this = big_integer(0);
         return *this;
     }
+    //bool res = num.sign;
+    this->sign = false;
     big_integer tmp = num;
+    tmp.sign = false;
     while (tmp.data.back() < base / 2) {
         tmp <<= 1;
         *this <<= 1;
     }
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
-
+    big_integer comp = big_integer(1) << (dif * 64);
+    comp *= tmp;
+    if (*this >= comp) {
+        *this -= comp;
+    } else {
+    }
+    comp.data.resize(1);
     for (size_t i = dif; i > 0; --i) {
         __uint128_t curr = this->data[n + i - 1];
+        curr <<= 64;
         curr += this->data[n + i - 2];
         curr /= tmp.data[n - 1];
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        *this -= (big_integer(curr) << i) * tmp;
+        comp.data[0] = static_cast<size_t>(curr);
+        *this -= (comp << (i - 1)) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
-            *this += (tmp << i);
+            *this += (tmp << (i - 1));
+        }
+    }
+    //this->sign = res;
+    return *this;
+}
+
+big_integer& big_integer::correct() {
+    for (size_t i = this->data.size(); i > 1; --i) {
+        if (this->data.back() == 0) {
+            this->data.pop_back();
+        } else {
+            break;
         }
     }
     return *this;
 }
 
-big_integer code(big_integer const &num) {
-    big_integer tmp = num;
-    if (tmp >= big_integer(0)) {
-        return tmp;
+big_integer& big_integer::code() {
+    if (!this->sign) {
+        return *this;
     }
-    tmp = ~tmp;
-    tmp += big_integer(1);
-    return tmp;
+    this->sign = !this->sign;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        this->data[i] = ~this->data[i];
+    }
+    __uint128_t carry = 1;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        __uint128_t curr = this->data[i];
+        curr += carry;
+        this->data[i] = static_cast<size_t>(curr % base);
+        carry = curr / base;
+    }
+    if (carry != 0) {
+        this->sign = !this->sign;
+    }
+    return *this;
 }
 
-big_integer decode(big_integer const &num) {
-    big_integer tmp = num;
-    if (tmp >= big_integer(0)) {
-        return tmp;
+big_integer& big_integer::decode() {
+    if (!this->sign) {
+        return *this;
     }
-    tmp -= big_integer(1);
-    tmp = ~tmp;
-    return tmp;
+    __int128_t carry = 1;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        __int128_t curr = this->data[i];
+        curr -= carry;
+        if (curr >= 0) {
+            this->data[i] = static_cast<size_t>(curr);
+            carry = 0;
+        } else {
+            curr += base;
+            this->data[i] = static_cast<size_t>(curr);
+            carry = 1;
+        }
+        this->data[i] = ~this->data[i];
+    }
+    if (carry == 0) {
+        this->sign = !this->sign;
+    }
+    return *this;
 }
 
 big_integer& big_integer::operator&=(big_integer const &num) {
@@ -241,12 +290,13 @@ big_integer& big_integer::operator&=(big_integer const &num) {
     while (this->data.size() > tmp.data.size()) {
         tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(tmp);
-    for (size_t i = 0; i < tmp1.data.size(); i++) {
-        tmp1.data[i] &= tmp2.data[i];
+    (*this).code();
+    tmp.code();
+    for (size_t i = 0; i < tmp.data.size(); i++) {
+        this->data[i] &= tmp.data[i];
     }
-    tmp1.sign = tmp1.sign && tmp2.sign;
-    *this = decode(tmp1);
+    this->sign = this->sign && tmp.sign;
+    (*this).decode();
     return *this;
 }
 
@@ -258,12 +308,13 @@ big_integer& big_integer::operator|=(big_integer const &num) {
     while (this->data.size() > tmp.data.size()) {
         tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(tmp);
-    for (size_t i = 0; i < tmp1.data.size(); i++) {
-        tmp1.data[i] |= tmp2.data[i];
+    (*this).code();
+    tmp.code();
+    for (size_t i = 0; i < tmp.data.size(); i++) {
+        this->data[i] |= tmp.data[i];
     }
-    tmp1.sign = tmp1.sign || tmp2.sign;
-    *this = decode(tmp1);
+    this->sign = this->sign || tmp.sign;
+    (*this).decode();
     return *this;
 }
 
@@ -275,12 +326,13 @@ big_integer& big_integer::operator^=(big_integer const &num) {
     while (this->data.size() > tmp.data.size()) {
         tmp.data.push_back(0);
     }
-    big_integer tmp1 = code(*this), tmp2 = code(tmp);
-    for (size_t i = 0; i < tmp1.data.size(); i++) {
-        tmp1.data[i] ^= tmp2.data[i];
+    (*this).code();
+    tmp.code();
+    for (size_t i = 0; i < tmp.data.size(); i++) {
+        this->data[i] ^= tmp.data[i];
     }
-    tmp1.sign = tmp1.sign ^ tmp2.sign;
-    *this = decode(tmp1);
+    this->sign = this->sign ^ tmp.sign;
+    (*this).decode();
     return *this;
 }
 
@@ -326,12 +378,13 @@ big_integer big_integer::operator-() const {
 }
 
 big_integer big_integer::operator~() const {
-    big_integer tmp = code(*this);
+    big_integer tmp = *this;
+    tmp.code();
     tmp.sign = !tmp.sign;
     for (size_t i = 0; i < tmp.data.size(); ++i) {
         tmp.data[i] = ~tmp.data[i];
     }
-    return decode(tmp);
+    return tmp.decode();
 }
 
 big_integer& big_integer::operator++() {

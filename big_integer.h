@@ -54,6 +54,9 @@ struct big_integer
 private:
     bool sign;
     std::vector<size_t> data;
+    big_integer& code();
+    big_integer& decode();
+    big_integer& correct();
 };
 
 big_integer operator+(big_integer a, big_integer const& b);
