@@ -30,12 +30,13 @@ big_integer::big_integer(std::string const& str)
     :big_integer(0)
 {
     big_integer TEN = big_integer(10);
-    for (size_t i = str.length(); i > 1; --i) {
-        if (i == 1 && str[i - 1] == '-') {
+    for (size_t i = 0; i < str.length() ; ++i) {
+        if (i == 0 && str[i] == '-') {
             this->sign = true;
+            continue;
         }
         *this *= TEN;
-        *this += big_integer(static_cast<int>(str[i - 1] - '0'));
+        *this += big_integer(static_cast<int>(str[i] - '0'));
     }
 }
 
@@ -68,9 +69,9 @@ big_integer& big_integer::operator+=(big_integer const &num) {
             curr += num.data[i];
         }
         if (i < this->data.size()) {
-            this->data[i] = static_cast<size_t>(curr - ((curr >> 64) << 64));
+            this->data[i] = static_cast<size_t>(curr % base);
         } else {
-            this->data.push_back(static_cast<size_t>(curr - ((curr >> 64) << 64)));
+            this->data.push_back(static_cast<size_t>(curr % base));
         }
         carry = static_cast<size_t>(curr >> 64);
     }
@@ -87,7 +88,7 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         return *this;
     }
 
-    if (num.data.size() > this->data.size() || (num.data.size() == this->data.size() && num.data.back() > this->data.back())) {
+    if ((num.sign && num < *this) || (!num.sign && num > *this)) {
         *this = -(num - (*this));
         return *this;
     }
@@ -233,7 +234,6 @@ big_integer& big_integer::code() {
     if (!this->sign) {
         return *this;
     }
-    this->sign = !this->sign;
     for (size_t i = 0; i < this->data.size(); ++i) {
         this->data[i] = ~this->data[i];
     }
@@ -243,9 +243,6 @@ big_integer& big_integer::code() {
         curr += carry;
         this->data[i] = static_cast<size_t>(curr % base);
         carry = curr / base;
-    }
-    if (carry != 0) {
-        this->sign = !this->sign;
     }
     return *this;
 }
@@ -267,9 +264,6 @@ big_integer& big_integer::decode() {
             carry = 1;
         }
         this->data[i] = ~this->data[i];
-    }
-    if (carry == 0) {
-        this->sign = !this->sign;
     }
     return *this;
 }
@@ -347,18 +341,21 @@ big_integer& big_integer::operator<<=(int len) {
 }
 
 big_integer& big_integer::operator>>=(int len) {
+    (*this).code();
     size_t amount = static_cast<size_t>(len / 64);
     len %= 64;
     std::vector<size_t> val(this->data.size() - amount);
+    size_t add = static_cast<size_t>(base - 1) & ((1 << len) - 1);
     __uint128_t carry = 0;
     for (size_t i = this->data.size(); i > amount; --i) {
         __uint128_t curr = this->data[i - 1];
         curr >>= len;
-        val[i - amount - 1] = static_cast<size_t>((curr +carry) % base);
+        val[i - amount - 1] = static_cast<size_t>((curr + carry) % base);
         carry = curr / base;
     }
+    this->data[this->data.size() - 1] += add;
     this->data = val;
-    return *this;
+    return (*this).decode();
 }
 
 big_integer big_integer::operator+() const { return *this; }
