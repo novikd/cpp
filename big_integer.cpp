@@ -311,20 +311,23 @@ big_integer& big_integer::operator<<=(int len) {
 }
 
 big_integer& big_integer::operator>>=(int len) {
-    (*this).code();
     size_t amount = static_cast<size_t>(len / 64);
     len %= 64;
+    (*this).code();
     std::vector<size_t> val(this->data.size() - amount);
-    size_t add = static_cast<size_t>(base - 1) & ((1 << len) - 1);
-    __uint128_t carry = 0;
+    size_t help = static_cast<size_t>(1 << len) - 1;
+    size_t carry = 0;
+    std::vector<size_t> current = this->data;
     for (size_t i = this->data.size(); i > amount; --i) {
-        __uint128_t curr = this->data[i - 1];
-        curr >>= len;
-        val[i - amount - 1] = static_cast<size_t>((curr + carry) % base);
-        carry = curr / base;
-    }
-    if (this->sign) {
-        this->data[this->data.size() - 1] += add;
+        size_t curr = this->data[i - 1] & help;
+        this->data[i - 1] >>= len;
+        if (i == this->data.size()) {
+            this->data[i - 1] += this->sign ? help << (64 - len) : 0;
+        } else {
+            this->data[i - 1] += carry;
+        }
+        carry = curr << (64 - len);
+        val[i - amount - 1] = this->data[i - 1];
     }
     this->data = val;
     (*this).decode();
