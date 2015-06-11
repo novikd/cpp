@@ -27,15 +27,15 @@ big_integer::big_integer(big_integer const &num) {
 }
 
 big_integer::big_integer(std::string const& str)
-    :big_integer(0)
+        :big_integer(0)
 {
     big_integer TEN = big_integer(10);
-    for (size_t i = str.length(); i > 1; --i) {
-        if (i == 1 && str[i - 1] == '-') {
+    for (size_t i = 0; i < str.length() ; ++i) {
+        if (i == 0 && str[i] == '-') {
             this->sign = true;
         }
         *this *= TEN;
-        *this += big_integer(static_cast<int>(str[i - 1] - '0'));
+        *this += big_integer(static_cast<int>(str[i] - '0'));
     }
 }
 
@@ -340,6 +340,7 @@ big_integer& big_integer::operator<<=(int len) {
 }
 
 big_integer& big_integer::operator>>=(int len) {
+    (*this).code();
     size_t amount = static_cast<size_t>(len / 64);
     len %= 64;
     std::vector<size_t> val(this->data.size() - amount);
@@ -353,7 +354,7 @@ big_integer& big_integer::operator>>=(int len) {
     }
     this->data[this->data.size() - 1] += add;
     this->data = val;
-    return *this;
+    return (*this).decode();
 }
 
 big_integer big_integer::operator+() const { return *this; }
