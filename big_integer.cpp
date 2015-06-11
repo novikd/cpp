@@ -27,7 +27,7 @@ big_integer::big_integer(big_integer const &num) {
 }
 
 big_integer::big_integer(std::string const& str)
-    :big_integer(0)
+        :big_integer(0)
 {
     big_integer TEN = big_integer(10);
     for (size_t i = 0; i < str.length() ; ++i) {
