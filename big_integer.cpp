@@ -30,14 +30,16 @@ big_integer::big_integer(std::string const& str)
         :big_integer(0)
 {
     big_integer TEN = big_integer(10);
+    bool res = false;
     for (size_t i = 0; i < str.length() ; ++i) {
         if (i == 0 && str[i] == '-') {
-            this->sign = true;
+            res = true;
             continue;
         }
         *this *= TEN;
         *this += big_integer(static_cast<int>(str[i] - '0'));
     }
+    this->sign = res;
 }
 
 big_integer::~big_integer() { }
@@ -132,14 +134,16 @@ big_integer& big_integer::operator*= (big_integer const &num) {
 }
 
 big_integer& big_integer::operator/= (big_integer const &num) {
-    if (this->data.size() < num.data.size()) {
-        *this = big_integer(0);
-        return *this;
-    }
     bool res = this->sign ^ num.sign;
     this->sign = false;
     big_integer tmp = num;
     tmp.sign = false;
+
+    if (this->data.size() < num.data.size()) {
+        *this = big_integer(0);
+        return *this;
+    }
+
     while (tmp.data.back() < base / 2) {
         tmp <<= 1;
         *this <<= 1;
@@ -179,44 +183,10 @@ big_integer& big_integer::operator/= (big_integer const &num) {
 }
 
 big_integer& big_integer::operator%= (big_integer const &num) {
-    if (this->data.size() < num.data.size()) {
-        *this = big_integer(0);
-        return *this;
-    }
-    //bool res = num.sign;
-    this->sign = false;
-    big_integer tmp = num;
-    tmp.sign = false;
-    while (tmp.data.back() < base / 2) {
-        tmp <<= 1;
-        *this <<= 1;
-    }
-    size_t dif = this->data.size() - tmp.data.size();
-    size_t n = tmp.data.size();
-    big_integer comp = big_integer(1) << (dif * 64);
-    comp *= tmp;
-    if (*this >= comp) {
-        *this -= comp;
-    } else {
-    }
-    comp.data.resize(1);
-    for (size_t i = dif; i > 0; --i) {
-        __uint128_t curr = this->data[n + i - 1];
-        curr <<= 64;
-        curr += this->data[n + i - 2];
-        curr /= tmp.data[n - 1];
-        if (base - 1 < curr) {
-            curr = base - 1;
-        }
-        comp.data[0] = static_cast<size_t>(curr);
-        *this -= (comp << (i - 1)) * tmp;
-        while (*this < big_integer(0)) {
-            curr -= 1;
-            *this += (tmp << (i - 1));
-        }
-    }
-    //this->sign = res;
-    return (*this).correct();
+    big_integer tmp = (*this) / num;
+    tmp *= num;
+    *this -= tmp;
+    return *this;
 }
 
 big_integer& big_integer::correct() {
@@ -353,9 +323,12 @@ big_integer& big_integer::operator>>=(int len) {
         val[i - amount - 1] = static_cast<size_t>((curr + carry) % base);
         carry = curr / base;
     }
-    this->data[this->data.size() - 1] += add;
+    if (this->sign) {
+        this->data[this->data.size() - 1] += add;
+    }
     this->data = val;
-    return (*this).decode();
+    (*this).decode();
+    return (*this).correct();
 }
 
 big_integer big_integer::operator+() const { return *this; }
@@ -431,37 +404,30 @@ bool operator== (big_integer const &frs, big_integer const &snd) {
 bool operator!= (big_integer const &frs, big_integer const &snd) { return !(frs == snd); }
 
 bool operator< (big_integer const &frs, big_integer const &snd) {
-    big_integer tmp1 = frs, tmp2 = snd;
-    for (size_t i = tmp1.data.size(); i > 1; --i) {
-        if (tmp1.data[i - 1] == 0) {
-            tmp1.data.pop_back();
-        } else {
-            break;
-        }
+    if (frs == snd) {
+        return false;
     }
-    for (size_t i = tmp2.data.size(); i > 1; --i) {
-        if (tmp2.data[i - 1] == 0) {
-            tmp2.data.pop_back();
-        } else {
-            break;
-        }
-    }
-    if (tmp1.sign && !tmp2.sign) {
+    if (frs.sign && !snd.sign) {
         return true;
     }
-    if (!tmp1.sign && tmp2.sign) {
+    if (!frs.sign && snd.sign) {
         return false;
     }
 
     bool small = true;
-    if (tmp1.data.size() > tmp2.data.size()) {small = false;}
-    for (size_t i = tmp1.data.size(); i > 0 && small; --i) {
-        if (tmp1.data[i - 1] >= tmp2.data[i - 1]) {
-            small = false;
+    if (frs.data.size() > snd.data.size()) {small = false;}
+    if (frs.data.size() == snd.data.size()) {
+        for (size_t i = frs.data.size(); i > 0 && small; --i) {
+            if (frs.data[i - 1] < snd.data[i - 1]) {
+                break;
+            }
+            if (frs.data[i - 1] > snd.data[i - 1]) {
+                small = false;
+                break;
+            }
         }
     }
-
-    if ((!tmp1.sign && !small) || (tmp1.sign && small)) {
+    if ((!frs.sign && !small) || (snd.sign && small)) {
         return false;
     }
     return true;
@@ -498,23 +464,23 @@ big_integer operator<< (big_integer a, int b) { return a <<= b; }
 big_integer operator>> (big_integer a, int b) { return a >>= b; }
 
 std::string to_string(big_integer const &a) {
-    std::string result = "";
+    std::string result = "", sign = "";
     if (a == big_integer(0)) {
         return "0";
     }
     big_integer num = a;
     const big_integer TEN = big_integer(10);
+    if (num.sign) {
+        sign = "-";
+        num.sign = false;
+    }
     while (num > big_integer(0)) {
-        big_integer curr = num;
-        curr %= TEN;
+        big_integer curr = num % TEN;
         num /= TEN;
         result += static_cast<char>('0' + curr.data[0]);
     }
-    if (num.sign) {
-        result += '-';
-    }
     std::reverse(result.begin(), result.end());
-    return result;
+    return sign + result;
 }
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a) {
