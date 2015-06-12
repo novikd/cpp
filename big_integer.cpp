@@ -5,6 +5,7 @@
 #include <vector>
 #include <stdint.h>
 #include <algorithm>
+#include <c++/iostream>
 
 const __uint128_t base = static_cast<__uint128_t>(1) << 64;
 
@@ -56,11 +57,10 @@ big_integer& big_integer::operator+=(big_integer const &num) {
         return *this;
     }
     if (!this->sign && num.sign) {
-        big_integer tmp = -num;
-        *this -= tmp;
-        return *this;
+        return *this -= -num;
     }
 
+    std::vector<size_t> val;
     size_t carry = 0;
     for (size_t i = 0; i < this->data.size() || i < num.data.size(); i++) {
         __uint128_t curr = carry;
@@ -70,33 +70,30 @@ big_integer& big_integer::operator+=(big_integer const &num) {
         if (i < num.data.size()) {
             curr += num.data[i];
         }
-        if (i < this->data.size()) {
-            this->data[i] = static_cast<size_t>(curr % base);
-        } else {
-            this->data.push_back(static_cast<size_t>(curr % base));
-        }
+        val.push_back(static_cast<size_t>(curr % base));
         carry = static_cast<size_t>(curr >> 64);
     }
 
     if (carry != 0) {
-        this->data.push_back(carry);
+        val.push_back(carry);
     }
+    this->data = val;
     return (*this).correct();
 }
 
 big_integer& big_integer::operator-= (big_integer const &num) {
     if (this->sign ^ num.sign) {
-        *this += -num;
-        return *this;
+        return *this += -num;
     }
 
     if ((num.sign && num < *this) || (!num.sign && num > *this)) {
         *this = -(num - (*this));
         return *this;
     }
+
     __int128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
-        carry = this->data[i] - carry - num.data[i];
+        carry = this->data[i] - carry - (i < num.data.size() ? num.data[i] : 0);
         if (carry < 0) {
             this->data[i] = static_cast<size_t>(base + carry);
             carry = 1;
@@ -139,29 +136,27 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     big_integer tmp = num;
     tmp.sign = false;
 
-    if (this->data.size() < num.data.size() || *this == 0) {
+    if (this->data.size() < tmp.data.size()) {
         *this = big_integer(0);
         return *this;
     }
-
-    while (tmp.data.back() < base / 2) {
-        tmp <<= 1;
-        *this <<= 1;
-    }
+    //Making numbers normolized
+    size_t help = static_cast<size_t>(base / (num.data.back() + 1));
+    big_integer comp;
+    comp.data[0] = help;
+    tmp *= comp;
+    *this *= comp;
 
     big_integer quotient;
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
     quotient.data.resize(dif + 1, 0);
-    big_integer comp = big_integer(1) << (dif * 64);
+    comp = big_integer(1) << (dif * 64);
     comp *= tmp;
     if (*this >= comp) {
         quotient.data[dif] = 1;
         *this -= comp;
-    } else {
-        quotient.data[dif] = 0;
     }
-    comp.data.resize(1);
     for (size_t i = dif; i > 0; --i) {
         __uint128_t curr = this->data[n + i - 1];
         curr <<= 64;
@@ -170,24 +165,28 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         if (base - 1 < curr) {
             curr = base - 1;
         }
-        comp.data[0] = static_cast<size_t>(curr);
-        *this -= (comp << ((i - 1) * 64)) * tmp;
-        while (*this < big_integer(0)) {
+        big_integer temp = 0;
+        temp.data[0] = static_cast<size_t>(curr);
+        comp = tmp << ((i - 1) * 64);
+        *this -= comp * temp;
+
+        //std::cout << *this;
+        while (*this < 0) {
             curr -= 1;
-            *this += (tmp << (i - 1));
+            *this += comp;
+            //std::cout << static_cast<size_t>(curr) << "\n";
         }
         quotient.data[i - 1] = static_cast<size_t>(curr);
     }
     quotient.sign = res;
     *this = quotient;
+    //std::cout << "Divided\n";
     return (*this).correct();
 }
 
 big_integer& big_integer::operator%= (big_integer const &num) {
     big_integer tmp = (*this) / num;
-    tmp *= num;
-    *this -= tmp;
-    return *this;
+    return *this -= (tmp * num);
 }
 
 big_integer& big_integer::correct() {
@@ -303,7 +302,7 @@ big_integer& big_integer::operator<<=(int len) {
         curr <<= len;
         curr += carry;
         val.push_back(static_cast<size_t>(curr % base));
-        carry = curr / base;
+        carry = curr >> 64;
     }
     if (carry != 0) {
         val.push_back(static_cast<size_t>(carry));
@@ -377,29 +376,14 @@ big_integer big_integer::operator--(int) {
 }
 
 bool operator== (big_integer const &frs, big_integer const &snd) {
-    big_integer tmp1 = frs, tmp2 = snd;
-    for (size_t i = tmp1.data.size(); i > 1; --i) {
-        if (tmp1.data.back() == 0) {
-            tmp1.data.pop_back();
-        } else {
-            break;
-        }
-    }
-    for (size_t i = tmp2.data.size(); i > 1; --i) {
-        if (tmp2.data.back() == 0) {
-            tmp2.data.pop_back();
-        } else {
-            break;
-        }
-    }
-    if (tmp1.data.size() == tmp2.data.size() && tmp1.data.size() == 1 && tmp1.data[0] == tmp2.data[0] && tmp1.data[0] == 0) {
+    if (frs.data.size() == snd.data.size() && frs.data.size() == 1 && frs.data[0] == snd.data[0] && frs.data[0] == 0) {
         return true;
     }
-    if ((tmp1.sign ^ tmp2.sign) || (tmp1.data.size() != tmp2.data.size())) {
+    if ((frs.sign ^ snd.sign) || (frs.data.size() != snd.data.size())) {
         return false;
     }
-    for (size_t i = 0; i < tmp1.data.size(); ++i) {
-        if (tmp1.data[i] != tmp2.data[i]) {
+    for (size_t i = 0; i < frs.data.size(); ++i) {
+        if (frs.data[i] != snd.data[i]) {
             return false;
         }
     }
