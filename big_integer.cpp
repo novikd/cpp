@@ -139,7 +139,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
     big_integer tmp = num;
     tmp.sign = false;
 
-    if (this->data.size() < num.data.size()) {
+    if (this->data.size() < num.data.size() || *this == 0) {
         *this = big_integer(0);
         return *this;
     }
@@ -148,10 +148,11 @@ big_integer& big_integer::operator/= (big_integer const &num) {
         tmp <<= 1;
         *this <<= 1;
     }
+
     big_integer quotient;
     size_t dif = this->data.size() - tmp.data.size();
     size_t n = tmp.data.size();
-    quotient.data.resize(dif + 1);
+    quotient.data.resize(dif + 1, 0);
     big_integer comp = big_integer(1) << (dif * 64);
     comp *= tmp;
     if (*this >= comp) {
@@ -170,7 +171,7 @@ big_integer& big_integer::operator/= (big_integer const &num) {
             curr = base - 1;
         }
         comp.data[0] = static_cast<size_t>(curr);
-        *this -= (comp << (i - 1)) * tmp;
+        *this -= (comp << ((i - 1) * 64)) * tmp;
         while (*this < big_integer(0)) {
             curr -= 1;
             *this += (tmp << (i - 1));
@@ -253,7 +254,7 @@ big_integer& big_integer::operator&=(big_integer const &num) {
     }
     this->sign = this->sign && tmp.sign;
     (*this).decode();
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator|=(big_integer const &num) {
@@ -289,7 +290,7 @@ big_integer& big_integer::operator^=(big_integer const &num) {
     }
     this->sign = this->sign ^ tmp.sign;
     (*this).decode();
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator<<=(int len) {
@@ -300,14 +301,15 @@ big_integer& big_integer::operator<<=(int len) {
     for (size_t i = 0; i < this->data.size(); ++i) {
         __uint128_t curr = this->data[i];
         curr <<= len;
-        val.push_back(static_cast<size_t>((curr +carry) % base));
+        curr += carry;
+        val.push_back(static_cast<size_t>(curr % base));
         carry = curr / base;
     }
     if (carry != 0) {
         val.push_back(static_cast<size_t>(carry));
     }
     this->data = val;
-    return *this;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator>>=(int len) {
