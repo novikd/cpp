@@ -57,6 +57,7 @@ private:
     big_integer& code();
     big_integer& decode();
     big_integer& correct();
+    big_integer& mul_long_short(size_t num);
 };
 
 big_integer operator+(big_integer a, big_integer const& b);

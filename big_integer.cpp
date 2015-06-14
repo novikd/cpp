@@ -91,14 +91,19 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         return *this;
     }
 
-    __int128_t carry = 0;
+    __uint128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
-        carry = this->data[i] - carry - (i < num.data.size() ? num.data[i] : 0);
-        if (carry < 0) {
-            this->data[i] = static_cast<size_t>(base + carry);
+        __int128_t curr = this->data[i];
+        curr -= carry;
+        if (i < num.data.size()) {
+            curr -= num.data[i];
+        }
+        if (curr < 0) {
+            curr += base;
+            this->data[i] = static_cast<size_t>(curr);
             carry = 1;
         } else {
-            this->data[i] = static_cast<size_t>(carry);
+            this->data[i] = static_cast<size_t>(curr);
             carry = 0;
         }
     }
@@ -117,7 +122,9 @@ big_integer& big_integer::operator*= (big_integer const &num) {
         this->data[i - 1] = 0;
         for (size_t j = 0; j < num.data.size() || carry > 0; ++j) {
             if (i + j - 1 < this->data.size()) {
-                __uint128_t curr = this->data[i + j - 1] + mul * (j < num.data.size() ? num.data[j] : 0) + carry;
+                __uint128_t curr = this->data[i + j - 1];
+                curr += mul * (j < num.data.size() ? num.data[j] : 0);
+                curr += carry;
                 this->data[i + j - 1] = static_cast<size_t>(curr - ((curr >> 64) << 64));
                 carry = curr >> 64;
             } else {
@@ -130,58 +137,87 @@ big_integer& big_integer::operator*= (big_integer const &num) {
     return (*this).correct();
 }
 
-big_integer& big_integer::operator/= (big_integer const &num) {
-    bool res = this->sign ^ num.sign;
+big_integer& big_integer::mul_long_short(size_t num) {
+    size_t carry = 0;
+    for (size_t i = 0; i < this->data.size(); ++i) {
+        __uint128_t curr = this->data[i];
+        curr *= num;
+        curr += carry;
+        this->data[i] = static_cast<size_t>(curr & (base - 1));
+        carry = static_cast<size_t>(curr >> 64);
+    }
+    if (carry != 0) {
+        this->data.push_back(carry);
+    }
+    return *this;
+}
+
+size_t div(size_t fs, size_t sc, size_t d) {
+    __uint128_t qj = 0;
+    qj = ((static_cast<__uint128_t>(fs) << 64) + static_cast<__uint128_t>(sc));
+   
+    qj /= static_cast<__uint128_t>(d);
+   
+    size_t result = static_cast<size_t>(base - 1);
+    if (qj < (base - 1)) {
+        result = static_cast<size_t>(qj);
+    }
+
+    return result;
+}
+ 
+big_integer& big_integer::operator/=(big_integer const& rhs) {
+    bool sign = this->sign ^ rhs.sign;
     this->sign = false;
-    big_integer tmp = num;
-    tmp.sign = false;
+   
+    big_integer right(rhs);
+    right.sign = false;
 
-    if (this->data.size() < tmp.data.size()) {
-        *this = big_integer(0);
-        return *this;
+    if (*this < right) {
+        return *this = big_integer(0);
     }
-    //Making numbers normolized
-    size_t help = static_cast<size_t>(base / (num.data.back() + 1));
-    big_integer comp;
-    comp.data[0] = help;
-    tmp *= comp;
-    *this *= comp;
 
-    big_integer quotient;
-    size_t dif = this->data.size() - tmp.data.size();
-    size_t n = tmp.data.size();
-    quotient.data.resize(dif + 1, 0);
-    comp = big_integer(1) << (dif * 64);
-    comp *= tmp;
-    if (*this >= comp) {
-        quotient.data[dif] = 1;
-        *this -= comp;
+    size_t norm_kf = static_cast<size_t>(base / (right.data.back() + 1));
+    (*this).mul_long_short(norm_kf);
+    right.mul_long_short(norm_kf);
+
+    size_t n = right.data.size();
+    size_t m = this->data.size() - right.data.size();
+   
+    int temp = static_cast<int>(m) * 64;
+   
+    big_integer q(0);
+    q.data.resize(m + 1);
+   
+    if (*this >= (right << temp)) {
+        q.data[m] = 1;
+        *this -= (right << temp);
     }
-    for (size_t i = dif; i > 0; --i) {
-        __uint128_t curr = this->data[n + i - 1];
-        curr <<= 64;
-        curr += this->data[n + i - 2];
-        curr /= tmp.data[n - 1];
-        if (base - 1 < curr) {
-            curr = base - 1;
+
+    for (size_t j = m; j > 0; --j) {
+        q.data[j - 1] = div(this->data[n + j - 1], this->data[n + j - 2], right.data[n - 1]);
+
+        temp -= 64;
+        big_integer tmp = 0;
+        tmp.data[0] = q.data[j - 1];
+        *this -= (tmp * right) << temp;
+
+        size_t dec = 0;
+
+        big_integer dec_right;
+        while (this->sign) {
+            dec += 1;
+            if (dec == 1) dec_right = right << temp;
+            *this += dec_right;
+            //std::cout<<*this << "\n";
         }
-        big_integer temp = 0;
-        temp.data[0] = static_cast<size_t>(curr);
-        comp = tmp << ((i - 1) * 64);
-        *this -= comp * temp;
-
-        //std::cout << *this;
-        while (*this < 0) {
-            curr -= 1;
-            *this += comp;
-            //std::cout << static_cast<size_t>(curr) << "\n";
-        }
-        quotient.data[i - 1] = static_cast<size_t>(curr);
+        q.data[j] -= dec;
     }
-    quotient.sign = res;
-    *this = quotient;
-    //std::cout << "Divided\n";
-    return (*this).correct();
+   
+    q.correct();
+    q.sign = sign;
+    *this = q;
+    return *this;
 }
 
 big_integer& big_integer::operator%= (big_integer const &num) {
@@ -402,11 +438,11 @@ bool operator< (big_integer const &frs, big_integer const &snd) {
     if (!frs.sign && snd.sign) {
         return false;
     }
-
+//compare abs
     bool small = true;
     if (frs.data.size() > snd.data.size()) {small = false;}
     if (frs.data.size() == snd.data.size()) {
-        for (size_t i = frs.data.size(); i > 0 && small; --i) {
+        for (size_t i = frs.data.size(); i > 0; --i) {
             if (frs.data[i - 1] < snd.data[i - 1]) {
                 break;
             }
@@ -416,7 +452,7 @@ bool operator< (big_integer const &frs, big_integer const &snd) {
             }
         }
     }
-    if ((!frs.sign && !small) || (snd.sign && small)) {
+    if (!(frs.sign ^ small)) {
         return false;
     }
     return true;
@@ -454,11 +490,11 @@ big_integer operator>> (big_integer a, int b) { return a >>= b; }
 
 std::string to_string(big_integer const &a) {
     std::string result = "", sign = "";
-    if (a == big_integer(0)) {
+    if (a == 0) {
         return "0";
     }
     big_integer num = a;
-    const big_integer TEN = big_integer(10);
+    const big_integer TEN(10);
     if (num.sign) {
         sign = "-";
         num.sign = false;

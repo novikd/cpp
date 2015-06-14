@@ -12,4 +12,5 @@ add_executable(big_integer_testing
     gtest/gtest-all.cc
     gtest/gtest.h
     gtest/gtest_main.cc)
+add_executable(main main.cpp big_integer.h big_integer.cpp)
 target_link_libraries(big_integer_testing -lpthread)
