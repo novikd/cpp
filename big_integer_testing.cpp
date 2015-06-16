@@ -537,7 +537,7 @@ TEST(correctness, string_conv)
 namespace
 {
     unsigned const number_of_iterations = 10;
-    size_t const number_of_multipliers = 1000;
+    size_t const number_of_multipliers = 900;
 
     int myrand()
     {
@@ -551,21 +551,21 @@ namespace
 
 TEST(correctness, mul_div_randomized)
 {
-    for (unsigned itn = 0; itn != number_of_iterations; ++itn)
+    for (unsigned itn = 0; itn != number_of_iterations / 2; ++itn)
     {
         std::vector<int> multipliers;
 
-        for (size_t i = 0; i != number_of_multipliers; ++i)
+        for (size_t i = 0; i != number_of_multipliers / 2; ++i)
             multipliers.push_back(myrand());
 
         big_integer accumulator = 1;
 
-        for (size_t i = 0; i != number_of_multipliers; ++i)
+        for (size_t i = 0; i != number_of_multipliers / 2; ++i)
             accumulator *= multipliers[i];
 
         std::random_shuffle(multipliers.begin(), multipliers.end());
 
-        for (size_t i = 1; i != number_of_multipliers; ++i)
+        for (size_t i = 1; i != number_of_multipliers / 2; ++i)
             accumulator /= multipliers[i];
 
         EXPECT_TRUE(accumulator == multipliers[0]);

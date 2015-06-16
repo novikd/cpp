@@ -167,8 +167,6 @@ size_t div(size_t fs, size_t sc, size_t d) {
 }
  
 big_integer& big_integer::operator/=(big_integer const& rhs) {
-    big_integer a(*this);
-    big_integer b(rhs);
     bool sign = this->sign ^ rhs.sign;
     this->sign = false;
    
@@ -176,7 +174,7 @@ big_integer& big_integer::operator/=(big_integer const& rhs) {
     right.sign = false;
 
     if (*this < right) {
-        return *this = big_integer(0);
+        return *this = 0;
     }
 
     size_t norm_kf = static_cast<size_t>(base / (right.data.back() + 1));
@@ -186,17 +184,14 @@ big_integer& big_integer::operator/=(big_integer const& rhs) {
     size_t n = right.data.size();
     size_t m = this->data.size() - right.data.size();
    
-    int temp = static_cast<int>(m) * 64;
-   
     big_integer q(0);
     q.data.resize(m + 1);
-    big_integer shifted_right(right << temp);
+    big_integer shifted_right(right << (static_cast<int>(m) * 64));
    
     if (*this >= shifted_right) {
         q.data[m] = 1;
         *this -= shifted_right;
     }
-
 
     for (size_t j = m; j > 0; --j) {
         q.data[j - 1] = div(this->data[n + j - 1], this->data[n + j - 2], right.data[n - 1]);
@@ -207,18 +202,16 @@ big_integer& big_integer::operator/=(big_integer const& rhs) {
         *this -= curr;
 
         size_t dec = 0;
-        while (this->sign) {
+        while (*this < 0) {
             dec += 1;
             *this += shifted_right;
-            //std::cout<<j << "\n";
         }
         q.data[j - 1] -= dec;
     }
    
-    q.correct();
-    q.sign = sign;
     *this = q;
-    return *this;
+    this->sign  = sign;
+    return (*this).correct();
 }
 
 big_integer& big_integer::operator%= (big_integer const &num) {
