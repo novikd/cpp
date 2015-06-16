@@ -14,6 +14,7 @@ struct big_integer
     big_integer();
     big_integer(big_integer const& other);
     big_integer(int a);
+    big_integer(size_t a);
     explicit big_integer(std::string const& str);
     ~big_integer();
 
@@ -58,6 +59,7 @@ private:
     big_integer& decode();
     big_integer& correct();
     big_integer& mul_long_short(size_t num);
+    big_integer abs() const;
 };
 
 big_integer operator+(big_integer a, big_integer const& b);

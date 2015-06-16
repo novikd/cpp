@@ -65,12 +65,12 @@ big_integer& big_integer::operator+=(big_integer const &num) {
     for (size_t i = 0; i < this->data.size() || i < num.data.size(); i++) {
         __uint128_t curr = carry;
         if (i < this->data.size()) {
-            curr += this->data[i];
+            curr += static_cast<__uint128_t>(this->data[i]);
         }
         if (i < num.data.size()) {
-            curr += num.data[i];
+            curr += static_cast<__uint128_t>(num.data[i]);
         }
-        val.push_back(static_cast<size_t>(curr % base));
+        val.push_back(static_cast<size_t>(curr & (base - 1)));
         carry = static_cast<size_t>(curr >> 64);
     }
 
@@ -86,17 +86,17 @@ big_integer& big_integer::operator-= (big_integer const &num) {
         return *this += -num;
     }
 
-    if ((num.sign && num < *this) || (!num.sign && num > *this)) {
+    if (num.abs() > (*this).abs()) {
         *this = -(num - (*this));
         return *this;
     }
 
     __uint128_t carry = 0;
     for (size_t i = 0; i < num.data.size() || carry != 0 ; i++) {
-        __int128_t curr = this->data[i];
+        __int128_t curr = static_cast<__int128_t>(this->data[i]);
         curr -= carry;
         if (i < num.data.size()) {
-            curr -= num.data[i];
+            curr -= static_cast<__int128_t>(num.data[i]);
         }
         if (curr < 0) {
             curr += base;
@@ -118,14 +118,14 @@ big_integer& big_integer::operator*= (big_integer const &num) {
     size_t len = this->data.size();
     this->data.resize(len + num.data.size());
     for (size_t i = len; i > 0; --i) {
-        __uint128_t mul = this->data[i - 1];
+        __uint128_t mul = static_cast<__uint128_t>(this->data[i - 1]);
         this->data[i - 1] = 0;
         for (size_t j = 0; j < num.data.size() || carry > 0; ++j) {
             if (i + j - 1 < this->data.size()) {
                 __uint128_t curr = this->data[i + j - 1];
-                curr += mul * (j < num.data.size() ? num.data[j] : 0);
+                curr += mul * (j < num.data.size() ? static_cast<__uint128_t>(num.data[j]) : 0);
                 curr += carry;
-                this->data[i + j - 1] = static_cast<size_t>(curr - ((curr >> 64) << 64));
+                this->data[i + j - 1] = static_cast<size_t>(curr);
                 carry = curr >> 64;
             } else {
                 this->data.push_back(static_cast<size_t>(carry));
@@ -140,9 +140,9 @@ big_integer& big_integer::operator*= (big_integer const &num) {
 big_integer& big_integer::mul_long_short(size_t num) {
     size_t carry = 0;
     for (size_t i = 0; i < this->data.size(); ++i) {
-        __uint128_t curr = this->data[i];
-        curr *= num;
-        curr += carry;
+        __uint128_t curr = static_cast<__uint128_t>(this->data[i]);
+        curr *= static_cast<__uint128_t>(num);
+        curr += static_cast<__uint128_t>(carry);
         this->data[i] = static_cast<size_t>(curr & (base - 1));
         carry = static_cast<size_t>(curr >> 64);
     }
@@ -167,6 +167,8 @@ size_t div(size_t fs, size_t sc, size_t d) {
 }
  
 big_integer& big_integer::operator/=(big_integer const& rhs) {
+    big_integer a(*this);
+    big_integer b(rhs);
     bool sign = this->sign ^ rhs.sign;
     this->sign = false;
    
@@ -188,30 +190,29 @@ big_integer& big_integer::operator/=(big_integer const& rhs) {
    
     big_integer q(0);
     q.data.resize(m + 1);
+    big_integer shifted_right(right << temp);
    
-    if (*this >= (right << temp)) {
+    if (*this >= shifted_right) {
         q.data[m] = 1;
-        *this -= (right << temp);
+        *this -= shifted_right;
     }
+
 
     for (size_t j = m; j > 0; --j) {
         q.data[j - 1] = div(this->data[n + j - 1], this->data[n + j - 2], right.data[n - 1]);
 
-        temp -= 64;
-        big_integer tmp = 0;
-        tmp.data[0] = q.data[j - 1];
-        *this -= (tmp * right) << temp;
+        shifted_right >>= 64;
+        big_integer curr(q.data[j - 1]);
+        curr *= shifted_right;
+        *this -= curr;
 
         size_t dec = 0;
-
-        big_integer dec_right;
         while (this->sign) {
             dec += 1;
-            if (dec == 1) dec_right = right << temp;
-            *this += dec_right;
-            //std::cout<<*this << "\n";
+            *this += shifted_right;
+            //std::cout<<j << "\n";
         }
-        q.data[j] -= dec;
+        q.data[j - 1] -= dec;
     }
    
     q.correct();
@@ -510,4 +511,14 @@ std::string to_string(big_integer const &a) {
 
 std::ostream& operator<<(std::ostream& s, big_integer const& a) {
     return s << to_string(a);
+}
+
+big_integer big_integer::abs() const {
+    return this->sign ? -(*this) : *this;
+}
+
+big_integer::big_integer(size_t a)
+    :big_integer(0)
+{
+    this->data[0] = a;
 }
