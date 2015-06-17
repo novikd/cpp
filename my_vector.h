@@ -4,6 +4,7 @@
 
 #include <c++/bits/shared_ptr.h>
 #include <vector>
+#include <stddef.h>
 
 #ifndef BIGINT_MY_VECTOR_H
 #define BIGINT_MY_VECTOR_H
@@ -26,7 +27,7 @@ struct my_vector {
     size_t size() const;
     void resize(const size_t len);
     void resize(const size_t len, size_t val);
-    size_t& operator[] (my_vector& v, const size_t index);
+    size_t& operator[] (const size_t index);
 
 private:
     std::shared_ptr<saved_data> data;
@@ -36,4 +37,4 @@ private:
     void to_array();
 };
 
-size_t& operator[] (my_vector& v, const size_t index);
+size_t& operator[] (const size_t index);

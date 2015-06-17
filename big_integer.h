@@ -7,6 +7,7 @@
 
 #include <string>
 #include <vector>
+#include "my_vector.h"
 
 struct big_integer
 {
@@ -54,7 +55,7 @@ struct big_integer
 
 private:
     bool sign;
-    std::vector<size_t> data;
+    my_vector data;
     big_integer& code();
     big_integer& decode();
     big_integer& correct();

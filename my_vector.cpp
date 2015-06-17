@@ -103,11 +103,11 @@ void my_vector::resize(size_t len, size_t val) {
     this->correct();
 }
 
-size_t& my_vector::operator[] (my_vector& v, const size_t index) {
-    v.make_own();
-    if (v.is_small) {
-        return *v.data->val;
+size_t& my_vector::operator[] (const size_t index) {
+    this->make_own();
+    if (this->is_small) {
+        return *this->data->val;
     } else {
-        return *v.data->vals->[index];
+        return *this->data->vals->[index];
     }
 }
