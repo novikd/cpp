@@ -5,7 +5,7 @@
 #include "my_vector.h"
 
 my_vector::my_vector(size_t val) {
-    *this->data->val = val;
+    this->data->val = new size_t(val);
 }
 
 my_vector::my_vector()
@@ -13,16 +13,17 @@ my_vector::my_vector()
 {}
 
 my_vector::my_vector(std::vector<size_t> val) {
-    *this->data->vals = val;
+    this->data->vals = new std::vector<size_t>(val);
 }
 
 my_vector::~my_vector() {
-    delete this->data;
+    delete this->data->val;
+    delete this->data->vals;
 }
 
 void my_vector::correct() {
     if (!this->is_small && this->data->vals->size() == 1) {
-        size_t* curr = new *this->data->vals->[0];
+        size_t* curr = new size_t(this->data->vals->at(0));
         delete this->data->vals;
         this->data->val = curr;
         this->is_small = true;
@@ -36,7 +37,7 @@ void my_vector::make_own() {
         } else {
             std::vector<size_t>* curr = new std::vector<size_t>;
             for (size_t i = 0; i < this->data->vals->size(); ++i) {
-                curr->push_back(this->data->vals->[i]);
+                curr->push_back(this->data->vals->at(i));
             }
             this->data->vals = curr;
         }
@@ -103,11 +104,19 @@ void my_vector::resize(size_t len, size_t val) {
     this->correct();
 }
 
+size_t my_vector::operator[](const size_t index) const {
+    if (this->is_small) {
+        return *this->data->val;
+    } else {
+        return this->data->vals->at(index);
+    }
+}
+
 size_t& my_vector::operator[] (const size_t index) {
     this->make_own();
     if (this->is_small) {
         return *this->data->val;
     } else {
-        return *this->data->vals->[index];
+        return this->data->vals->at(index);
     }
 }

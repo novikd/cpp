@@ -2,7 +2,6 @@
 // Created by novik on 27.05.15.
 //
 #include "big_integer.h"
-#include <vector>
 #include <stdint.h>
 #include <algorithm>
 #include <c++/iostream>
@@ -12,10 +11,10 @@ const __uint128_t base = static_cast<__uint128_t>(1) << 64;
 big_integer::big_integer(int num) {
     if (num >= 0) {
         this->sign = false;
-        this->data.push_back(static_cast<size_t>(num));
+        this->data[0] = (static_cast<size_t>(num));
     } else {
         this->sign = true;
-        this->data.push_back(static_cast<size_t>(-num));
+        this->data[0] = (static_cast<size_t>(-num));
     }
 }
 
@@ -348,7 +347,7 @@ big_integer& big_integer::operator>>=(int len) {
     std::vector<size_t> val(this->data.size() - amount);
     size_t help = static_cast<size_t>(1 << len) - 1;
     size_t carry = 0;
-    std::vector<size_t> current = this->data;
+    my_vector current = this->data;
     for (size_t i = this->data.size(); i > amount; --i) {
         size_t curr = this->data[i - 1] & help;
         this->data[i - 1] >>= len;

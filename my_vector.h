@@ -2,7 +2,7 @@
 // Created by 1 on 15.06.2015.
 //
 
-#include <c++/bits/shared_ptr.h>
+#include <memory>
 #include <vector>
 #include <stddef.h>
 
@@ -27,6 +27,7 @@ struct my_vector {
     size_t size() const;
     void resize(const size_t len);
     void resize(const size_t len, size_t val);
+    size_t operator[] (const size_t index) const;
     size_t& operator[] (const size_t index);
 
 private:
@@ -36,5 +37,3 @@ private:
     void make_own();
     void to_array();
 };
-
-size_t& operator[] (const size_t index);
